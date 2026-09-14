@@ -1,0 +1,1902 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ภารกิจแม่ลิงเก็บกล้วย: ตะลุยโลก Reinforcement Learning (ม.1)</title>
+  
+  <!-- Google Fonts: Mali & Itim -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Itim&family=Mali:ital,wght@0,300;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome for Doodle-compatible icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    :root {
+      --font-doodle: 'Mali', 'Itim', cursive, sans-serif;
+    }
+    body {
+      font-family: var(--font-doodle);
+      background-color: #FAF8F5;
+      background-image: 
+        radial-gradient(#E2DDD5 1.2px, transparent 1.2px), 
+        linear-gradient(to right, #ece8df 1px, transparent 1px),
+        linear-gradient(to bottom, #ece8df 1px, transparent 1px);
+      background-size: 24px 24px, 24px 24px, 24px 24px;
+      color: #222222;
+      overflow-x: hidden;
+      min-height: 100dvh;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Prevent mobile input auto-zoom on iOS */
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+    @media (min-width: 640px) {
+      input, select, textarea {
+        font-size: 0.875rem !important; /* 14px */
+      }
+    }
+
+    /* Hand-drawn borders & hard doodle shadows */
+    .doodle-box {
+      border: 2.5px solid #222;
+      border-radius: 20px 14px 22px 15px/15px 22px 14px 20px;
+      box-shadow: 3px 4px 0px #222;
+      transition: all 0.2s ease-in-out;
+    }
+    @media (min-width: 768px) {
+      .doodle-box {
+        border-width: 3px;
+        box-shadow: 4px 5px 0px #222;
+      }
+    }
+    .doodle-box-sm {
+      border: 2px solid #222;
+      border-radius: 16px 12px 18px 14px/14px 18px 12px 16px;
+      box-shadow: 2.5px 2.5px 0px #222;
+    }
+    .doodle-btn {
+      border: 2px solid #222;
+      border-radius: 18px 12px 20px 14px/14px 20px 12px 18px;
+      box-shadow: 2.5px 3px 0px #222;
+      transition: transform 0.1s, box-shadow 0.1s;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    @media (min-width: 768px) {
+      .doodle-btn {
+        border-width: 2.5px;
+        box-shadow: 3px 4px 0px #222;
+      }
+    }
+    .doodle-btn:hover:not(:disabled) {
+      transform: translate(-1.5px, -1.5px);
+      box-shadow: 4px 5px 0px #222;
+    }
+    .doodle-btn:active:not(:disabled) {
+      transform: translate(2px, 3px);
+      box-shadow: 0px 0px 0px #222;
+    }
+    .doodle-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      filter: grayscale(80%);
+    }
+
+    /* Flip Card Style for Slide 2 & Real World Modal */
+    .perspective-1000 {
+      perspective: 1000px;
+    }
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+      transform-style: preserve-3d;
+      cursor: pointer;
+    }
+    .card-inner.is-flipped {
+      transform: rotateY(180deg);
+    }
+    .card-front, .card-back {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 16px;
+    }
+    .card-back {
+      transform: rotateY(180deg);
+    }
+
+    /* Floating / Bouncing animations */
+    @keyframes floaty {
+      0%, 100% { transform: translateY(0px) rotate(-1deg); }
+      50% { transform: translateY(-7px) rotate(1.5deg); }
+    }
+    .animate-float {
+      animation: floaty 3s ease-in-out infinite;
+    }
+
+    @keyframes scorePop {
+      0% { transform: scale(0.6) translateY(0); opacity: 0; }
+      50% { transform: scale(1.3) translateY(-25px); opacity: 1; }
+      100% { transform: scale(1) translateY(-45px); opacity: 0; }
+    }
+    .pop-score {
+      animation: scorePop 0.85s forwards ease-out;
+    }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1ede4;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c8c2b7;
+      border-radius: 4px;
+      border: 1px solid #222;
+    }
+  </style>
+</head>
+
+<body class="min-h-[100dvh] flex flex-col justify-between p-2.5 sm:p-4 md:p-6 text-slate-800 selection:bg-amber-200 antialiased">
+  <!-- Top Navigation / Progress Notebook Bar -->
+  <header class="w-full max-w-5xl mx-auto mb-3 sm:mb-4">
+    <div class="bg-white doodle-box p-2.5 sm:px-4 sm:py-3 flex items-center justify-between gap-2 bg-[#FFFDF9]">
+      <div class="flex items-center gap-2 min-w-0">
+        <span class="text-2xl sm:text-3xl animate-bounce shrink-0">🐵</span>
+        <div class="truncate">
+          <h1 class="font-bold text-sm sm:text-lg md:text-xl text-stone-800 leading-tight truncate">ภารกิจแม่ลิง: RL</h1>
+          <p class="text-[10px] sm:text-xs text-stone-500 font-medium hidden xs:block sm:block truncate">วิทย์คำนวณ ม.1 • การเรียนรู้แบบเสริมแรง</p>
+        </div>
+      </div>
+
+      <!-- Slide Indicator & Student Badge -->
+      <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
+        <div id="userBadge" class="hidden text-[10px] sm:text-xs bg-amber-100 border-2 border-slate-800 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full font-bold shadow-[1.5px_1.5px_0px_#222] max-w-[130px] sm:max-w-none truncate">
+          <i class="fa-solid fa-user-astronaut mr-1 text-amber-600"></i>
+          <span id="badgeStudentInfo" class="truncate">นักเรียน</span>
+        </div>
+        <div class="flex items-center bg-stone-100 border-2 border-stone-800 rounded-full px-2.5 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm font-bold shadow-[1.5px_1.5px_0px_#222]">
+          หน้า <span id="currentSlideNum" class="text-amber-600 mx-1 text-sm sm:text-base font-black">1</span> / 6
+        </div>
+      </div>
+    </div>
+
+    <!-- Notebook Progress Tabs -->
+    <div class="flex justify-between items-center max-w-xl mx-auto mt-1.5 sm:mt-2 px-1">
+      <div class="h-2 sm:h-2.5 w-full bg-stone-200 rounded-full border-2 border-stone-800 overflow-hidden p-[1px]">
+        <div id="progressBar" class="h-full bg-emerald-400 rounded-full transition-all duration-300 w-1/6"></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="w-full max-w-5xl mx-auto flex-1 flex flex-col justify-center my-auto">
+
+    <!-- ========================================================
+         SLIDE 1: หน้าลงทะเบียน (Login Screen)
+         ======================================================== -->
+    <section id="slide-1" class="slide-page block">
+      <div class="bg-white doodle-box p-4 sm:p-6 md:p-10 max-w-2xl mx-auto text-center relative bg-[#FEFDF9]">
+        <!-- Decorative Tape & Sticker -->
+        <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-amber-200 border-2 border-stone-800 px-4 sm:px-6 py-0.5 text-[10px] sm:text-xs font-bold tracking-wider uppercase shadow-[2px_2px_0px_#000] rotate-1 whitespace-nowrap">
+          ★ แบบทดลองเรียนรู้ AI ม.1 ★
+        </div>
+        <span class="absolute -top-2.5 -right-2.5 text-3xl sm:text-4xl animate-float">🍌</span>
+        <span class="absolute bottom-3 left-3 text-2xl sm:text-3xl opacity-80 rotate-12">🌴</span>
+
+        <h2 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-stone-800 mt-2 mb-2">
+          ยินดีต้อนรับสู่ ป่าหรรษา AI! 🐒
+        </h2>
+        <p class="text-stone-600 text-xs sm:text-sm md:text-base mb-5 sm:mb-6 max-w-md mx-auto leading-relaxed">
+          ร่วมผจญภัยไปกับ <b>"แม่ลิง"</b> เพื่อเรียนรู้ว่าปัญญาประดิษฐ์ (AI) เรียนรู้จาก <b>"รางวัลและการลงโทษ"</b> ได้อย่างไรด้วยเทคนิค <span class="bg-yellow-200 px-1.5 py-0.5 border border-black rounded font-bold">Reinforcement Learning</span>
+        </p>
+
+        <!-- Registration Form -->
+        <form id="loginForm" class="text-left space-y-3.5 sm:space-y-4 max-w-md mx-auto" onsubmit="event.preventDefault();">
+          <div>
+            <label class="block font-bold text-stone-700 text-xs sm:text-sm mb-1">
+              <i class="fa-solid fa-pencil text-amber-500 mr-1"></i> ชื่อ - นามสกุล:
+            </label>
+            <input type="text" id="studentName" placeholder="เช่น ด.ช. ปัญญา คิดดี" 
+              class="w-full px-3.5 py-2 sm:py-2.5 bg-stone-50 border-2 border-stone-800 rounded-xl focus:outline-none focus:bg-amber-50 focus:border-amber-500 shadow-[2px_2px_0px_#222] text-sm md:text-base">
+            <p id="nameError" class="text-rose-500 text-xs mt-1 hidden font-bold">* กรุณากรอกชื่อ-นามสกุลให้ครบถ้วน</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 sm:gap-4">
+            <div>
+              <label class="block font-bold text-stone-700 text-xs sm:text-sm mb-1">
+                <i class="fa-solid fa-school text-sky-500 mr-1"></i> ห้องเรียน:
+              </label>
+              <select id="studentClass" 
+                class="w-full px-3 py-2 sm:py-2.5 bg-stone-50 border-2 border-stone-800 rounded-xl focus:outline-none focus:bg-sky-50 focus:border-sky-500 shadow-[2px_2px_0px_#222] text-sm md:text-base cursor-pointer font-bold text-stone-800">
+                <option value="ม.1/10" selected>ม.1/10</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-bold text-stone-700 text-xs sm:text-sm mb-1">
+                <i class="fa-solid fa-hashtag text-emerald-500 mr-1"></i> เลขที่:
+              </label>
+              <input type="number" id="studentNumber" min="1" max="60" placeholder="1-50"
+                class="w-full px-3 py-2 sm:py-2.5 bg-stone-50 border-2 border-stone-800 rounded-xl focus:outline-none focus:bg-emerald-50 focus:border-emerald-500 shadow-[2px_2px_0px_#222] text-sm md:text-base">
+            </div>
+          </div>
+
+          <div class="pt-2 sm:pt-4">
+            <button type="button" id="btnStartAdventure" disabled onclick="handleStartAdventure()"
+              class="doodle-btn w-full py-3 px-6 bg-amber-300 hover:bg-amber-400 font-bold text-sm sm:text-base md:text-lg text-stone-900 flex items-center justify-center gap-2">
+              <span>เริ่มออกผจญภัย</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+            <p class="text-center text-[11px] sm:text-xs text-stone-400 mt-2 font-semibold">
+              * กรุณากรอกชื่อและเลขที่เพื่อปลดล็อกปุ่มเริ่มเรียน
+            </p>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         SLIDE 2: 4 สหายแห่ง Reinforcement Learning (RL)
+         ======================================================== -->
+    <section id="slide-2" class="slide-page hidden">
+      <div class="bg-white doodle-box p-3.5 sm:p-5 md:p-8 bg-[#FFFDF9]">
+        <div class="text-center mb-4 sm:mb-6">
+          <div class="inline-block bg-sky-200 border-2 border-stone-800 px-3 py-0.5 rounded-full text-[10px] sm:text-xs font-bold mb-1 shadow-[1.5px_1.5px_0px_#222]">
+            หัวใจสำคัญของ AI แบบ Reinforcement Learning
+          </div>
+          <h2 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-stone-800">
+            🌱 4 องค์ประกอบสำคัญของ RL
+          </h2>
+          <p class="text-stone-600 text-xs sm:text-sm mt-1">
+            คลิกที่การ์ดเพื่อ <b>"พลิกอ่าน"</b> ความหมายและการเปรียบเทียบในชีวิตจริงของแม่ลิง!
+          </p>
+        </div>
+
+        <!-- 4 Flip Cards Grid - Fully Responsive Height -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 perspective-1000 my-3 sm:my-4">
+          <!-- Card 1: Agent -->
+          <div class="h-56 sm:h-64 cursor-pointer select-none" onclick="toggleFlipCard(this)">
+            <div class="card-inner w-full h-full shadow-[2.5px_3px_0px_#222] border-2 border-stone-800 rounded-2xl">
+              <div class="card-front bg-amber-50 p-3 sm:p-4 flex flex-col justify-between items-center border border-dashed border-stone-400">
+                <span class="text-[10px] sm:text-xs bg-amber-200 border border-stone-800 px-2 py-0.5 rounded-full font-bold">องค์ประกอบที่ 1</span>
+                <div class="text-center">
+                  <div class="text-4xl sm:text-5xl my-1 sm:my-2">🐵</div>
+                  <h3 class="text-lg sm:text-xl font-bold text-stone-800">1. ตัวกระทำ</h3>
+                  <p class="text-[11px] sm:text-xs font-semibold text-stone-500 tracking-wider uppercase">(Agent)</p>
+                </div>
+                <div class="text-[11px] text-amber-700 bg-amber-100 px-2.5 py-1 rounded-lg border border-amber-300 font-bold">
+                  👆 แตะเพื่อพลิกดู
+                </div>
+              </div>
+              <div class="card-back bg-amber-200 p-3 sm:p-4 flex flex-col justify-center items-center text-left text-stone-800 border-2 border-stone-800">
+                <h4 class="font-bold text-xs sm:text-sm mb-1 text-center border-b border-stone-700 pb-1 w-full">🐵 Agent คือใคร?</h4>
+                <p class="text-[11px] sm:text-xs mt-1 leading-relaxed">
+                  <b>ผู้เรียนรู้/ผู้ตัดสินใจ</b> ที่มีหน้าที่ลองผิดลองถูกเพื่อหาทางได้รางวัลสูงสุด
+                </p>
+                <div class="bg-white/85 p-2 rounded-lg mt-2 border border-stone-800 text-[10px] sm:text-[11px]">
+                  🍌 <b>ในเกม:</b> ก็คือ <b>แม่ลิง</b> ผู้พยายามหาวิธีเดินกลับบ้านอย่างปลอดภัย!
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Environment -->
+          <div class="h-56 sm:h-64 cursor-pointer select-none" onclick="toggleFlipCard(this)">
+            <div class="card-inner w-full h-full shadow-[2.5px_3px_0px_#222] border-2 border-stone-800 rounded-2xl">
+              <div class="card-front bg-emerald-50 p-3 sm:p-4 flex flex-col justify-between items-center border border-dashed border-stone-400">
+                <span class="text-[10px] sm:text-xs bg-emerald-200 border border-stone-800 px-2 py-0.5 rounded-full font-bold">องค์ประกอบที่ 2</span>
+                <div class="text-center">
+                  <div class="text-4xl sm:text-5xl my-1 sm:my-2">🌴</div>
+                  <h3 class="text-lg sm:text-xl font-bold text-stone-800">2. สิ่งแวดล้อม</h3>
+                  <p class="text-[11px] sm:text-xs font-semibold text-stone-500 tracking-wider uppercase">(Environment)</p>
+                </div>
+                <div class="text-[11px] text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-300 font-bold">
+                  👆 แตะเพื่อพลิกดู
+                </div>
+              </div>
+              <div class="card-back bg-emerald-200 p-3 sm:p-4 flex flex-col justify-center items-center text-left text-stone-800 border-2 border-stone-800">
+                <h4 class="font-bold text-xs sm:text-sm mb-1 text-center border-b border-stone-700 pb-1 w-full">🌴 Environment คืออะไร?</h4>
+                <p class="text-[11px] sm:text-xs mt-1 leading-relaxed">
+                  <b>โลกหรือขอบเขต</b> ที่ตัวกระทำอาศัยอยู่ คอยส่งข้อมูลและสถานะต่างๆ ให้ตัวกระทำรับรู้
+                </p>
+                <div class="bg-white/85 p-2 rounded-lg mt-2 border border-stone-800 text-[10px] sm:text-[11px]">
+                  🗺️ <b>ในเกม:</b> คือ <b>ป่าดงดิบ</b> และตารางช่องทางเดินที่มีทั้งอาหารและอุปสรรค!
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: Action -->
+          <div class="h-56 sm:h-64 cursor-pointer select-none" onclick="toggleFlipCard(this)">
+            <div class="card-inner w-full h-full shadow-[2.5px_3px_0px_#222] border-2 border-stone-800 rounded-2xl">
+              <div class="card-front bg-sky-50 p-3 sm:p-4 flex flex-col justify-between items-center border border-dashed border-stone-400">
+                <span class="text-[10px] sm:text-xs bg-sky-200 border border-stone-800 px-2 py-0.5 rounded-full font-bold">องค์ประกอบที่ 3</span>
+                <div class="text-center">
+                  <div class="text-4xl sm:text-5xl my-1 sm:my-2">🧭</div>
+                  <h3 class="text-lg sm:text-xl font-bold text-stone-800">3. การกระทำ</h3>
+                  <p class="text-[11px] sm:text-xs font-semibold text-stone-500 tracking-wider uppercase">(Action)</p>
+                </div>
+                <div class="text-[11px] text-sky-700 bg-sky-100 px-2.5 py-1 rounded-lg border border-sky-300 font-bold">
+                  👆 แตะเพื่อพลิกดู
+                </div>
+              </div>
+              <div class="card-back bg-sky-200 p-3 sm:p-4 flex flex-col justify-center items-center text-left text-stone-800 border-2 border-stone-800">
+                <h4 class="font-bold text-xs sm:text-sm mb-1 text-center border-b border-stone-700 pb-1 w-full">🧭 Action คืออะไร?</h4>
+                <p class="text-[11px] sm:text-xs mt-1 leading-relaxed">
+                  <b>ทางเลือกหรือคำสั่ง</b> ที่ตัวกระทำเลือกปฏิบัติเพื่อเปลี่ยนสถานะในสิ่งแวดล้อม
+                </p>
+                <div class="bg-white/85 p-2 rounded-lg mt-2 border border-stone-800 text-[10px] sm:text-[11px]">
+                  👣 <b>ในเกม:</b> เช่น การตัดสินใจเลือกว่าจะ <b>"เดินขึ้น"</b> หรือ <b>"เดินลง"</b> ในแต่ละช่อง
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4: Reward -->
+          <div class="h-56 sm:h-64 cursor-pointer select-none" onclick="toggleFlipCard(this)">
+            <div class="card-inner w-full h-full shadow-[2.5px_3px_0px_#222] border-2 border-stone-800 rounded-2xl">
+              <div class="card-front bg-rose-50 p-3 sm:p-4 flex flex-col justify-between items-center border border-dashed border-stone-400">
+                <span class="text-[10px] sm:text-xs bg-rose-200 border border-stone-800 px-2 py-0.5 rounded-full font-bold">องค์ประกอบที่ 4</span>
+                <div class="text-center">
+                  <div class="text-4xl sm:text-5xl my-1 sm:my-2">⭐</div>
+                  <h3 class="text-lg sm:text-xl font-bold text-stone-800">4. รางวัล / บทลงโทษ</h3>
+                  <p class="text-[11px] sm:text-xs font-semibold text-stone-500 tracking-wider uppercase">(Reward / Penalty)</p>
+                </div>
+                <div class="text-[11px] text-rose-700 bg-rose-100 px-2.5 py-1 rounded-lg border border-rose-300 font-bold">
+                  👆 แตะเพื่อพลิกดู
+                </div>
+              </div>
+              <div class="card-back bg-rose-200 p-3 sm:p-4 flex flex-col justify-center items-center text-left text-stone-800 border-2 border-stone-800">
+                <h4 class="font-bold text-xs sm:text-sm mb-1 text-center border-b border-stone-700 pb-1 w-full">⭐ Reward คืออะไร?</h4>
+                <p class="text-[11px] sm:text-xs mt-1 leading-relaxed">
+                  <b>แต้มผลลัพธ์</b> ที่สะท้อนว่าทำถูกหรือผิด: ได้กล้วยได้แต้มบวก (+) โดนมดกัดถูกหักแต้ม (-)
+                </p>
+                <div class="bg-white/85 p-2 rounded-lg mt-2 border border-stone-800 text-[10px] sm:text-[11px]">
+                  🎯 <b>เป้าหมาย AI:</b> ทำอย่างไรก็ได้ให้ได้ <b>คะแนนสะสมรวมสูงสุด!</b>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-amber-50 border-2 border-stone-800 rounded-xl p-2.5 sm:p-3 text-xs sm:text-sm text-stone-700 flex items-start sm:items-center gap-2 sm:gap-3 mt-2">
+          <span class="text-xl sm:text-2xl shrink-0">💡</span>
+          <div class="leading-snug">
+            <b>จำง่ายๆ สไตล์ ม.1:</b> แม่ลิง (Agent) เดินในป่า (Environment) เลือกว่าจะก้าวไปไหน (Action) ถ้าเก็บกล้วยได้คะแนน ถ้าโดนมดกัดเสียคะแนน (Reward) AI ก็เรียนรู้จากผลลัพธ์แบบนี้นี่เอง!
+          </div>
+        </div>
+
+        <!-- Banner เปิด Pop-up กิจกรรมเชื่อมโยงโลกจริง -->
+        <div class="mt-3 sm:mt-4 p-3 sm:p-3.5 bg-gradient-to-r from-amber-100 via-indigo-50 to-sky-100 border-2 border-stone-800 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-[2.5px_2.5px_0px_#222]">
+          <div class="flex items-center gap-2.5 sm:gap-3">
+            <span class="text-2xl sm:text-3xl animate-bounce shrink-0">🌍</span>
+            <div>
+              <span class="text-[10px] font-black uppercase text-indigo-800 tracking-wider bg-indigo-100 px-2 py-0.5 rounded border border-indigo-300 inline-block mb-0.5">
+                ⭐ ตอบคำถามยอดฮิต: เรียนเรื่องนี้ไปทำไม?
+              </span>
+              <h4 class="font-extrabold text-xs sm:text-sm md:text-base text-stone-800 leading-tight">
+                กิจกรรม "RL รอบตัวเรา" (Real-World RL Explorer)
+              </h4>
+              <p class="text-[10px] sm:text-[11px] text-stone-500 font-medium hidden xs:block">
+                สำรวจ 3 เทคโนโลยี AI ระดับโลกที่ใช้หลักการเดียวกับแม่ลิงเป๊ะๆ!
+              </p>
+            </div>
+          </div>
+          <button type="button" onclick="openRealWorldModal()" 
+            class="doodle-btn w-full sm:w-auto px-3.5 py-2 bg-amber-300 hover:bg-amber-400 font-black text-xs sm:text-sm text-stone-900 flex items-center justify-center gap-1.5 shrink-0">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <span>กดส่อง AI ในชีวิตจริง</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         SLIDE 3: ตารางความจำ Q-Table & การลองผิดลองถูก
+         ======================================================== -->
+    <section id="slide-3" class="slide-page hidden">
+      <div class="bg-white doodle-box p-3.5 sm:p-5 md:p-8 bg-[#FFFDF9]">
+        <div class="text-center mb-3 sm:mb-4">
+          <div class="inline-block bg-purple-200 border-2 border-stone-800 px-3 py-0.5 rounded-full text-[10px] sm:text-xs font-bold mb-1 shadow-[1.5px_1.5px_0px_#222]">
+            สมองจดจำของ AI (Q-Table)
+          </div>
+          <h2 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-stone-800">
+            📊 AI จำทางได้อย่างไร? ด้วย "ตารางคะแนนความคุ้มค่า"
+          </h2>
+          <p class="text-stone-600 text-xs sm:text-sm mt-1">
+            กดปุ่มทดลองเดิน เพื่อดูว่าแม่ลิงอัปเดตแต้มความจำในตารางอย่างไรเมื่อพบ กล้วย 🍌 (+1) หรือ รังมด 🐜 (-1)
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-center">
+          <!-- Mini Demo Stage -->
+          <div class="bg-stone-50 border-2 border-stone-800 rounded-2xl p-3 sm:p-4 shadow-[2.5px_2.5px_0px_#222] text-center relative overflow-hidden">
+            <div class="text-[10px] sm:text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">
+              สถานการณ์จำลอง: ช่องทางแยกข้างหน้า
+            </div>
+
+            <!-- Stage Visual -->
+            <div class="relative h-36 sm:h-44 bg-emerald-50 border-2 border-dashed border-emerald-400 rounded-xl flex items-center justify-between px-4 sm:px-6">
+              <!-- Monkey Agent -->
+              <div id="demoMonkey" class="text-3xl sm:text-4xl transition-all duration-500 transform relative select-none">
+                🐵
+                <div id="demoFloatingScore" class="hidden absolute -top-8 left-1/2 -translate-x-1/2 font-extrabold text-base sm:text-lg px-2 py-0.5 rounded-full border border-black shadow">
+                  +1
+                </div>
+              </div>
+
+              <!-- Two Choices (Up / Down) -->
+              <div class="flex flex-col justify-between h-28 sm:h-32 w-28 sm:w-32 relative">
+                <!-- Path Up (Banana) -->
+                <div class="bg-yellow-100 border-2 border-stone-800 rounded-xl p-1.5 sm:p-2 flex items-center justify-between shadow-[1.5px_1.5px_0px_#222]">
+                  <span class="text-[11px] sm:text-xs font-bold">ทางบน</span>
+                  <span class="text-xl sm:text-2xl animate-pulse">🍌</span>
+                </div>
+                <!-- Path Down (Ant Nest) -->
+                <div class="bg-rose-100 border-2 border-stone-800 rounded-xl p-1.5 sm:p-2 flex items-center justify-between shadow-[1.5px_1.5px_0px_#222]">
+                  <span class="text-[11px] sm:text-xs font-bold">ทางล่าง</span>
+                  <span class="text-xl sm:text-2xl">🐜</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Demo Controller Buttons -->
+            <div class="mt-3 sm:mt-4 flex gap-2 sm:gap-3 justify-center">
+              <button onclick="runDemoStep('up')" class="doodle-btn px-3 sm:px-4 py-1.5 sm:py-2 bg-yellow-300 hover:bg-yellow-400 font-bold text-xs sm:text-sm flex items-center gap-1">
+                <span>เดินขึ้นบน 🍌</span>
+              </button>
+              <button onclick="runDemoStep('down')" class="doodle-btn px-3 sm:px-4 py-1.5 sm:py-2 bg-rose-300 hover:bg-rose-400 font-bold text-xs sm:text-sm flex items-center gap-1">
+                <span>เดินลงล่าง 🐜</span>
+              </button>
+              <button onclick="resetDemoStep()" class="doodle-btn px-2.5 sm:px-3 py-1.5 sm:py-2 bg-stone-200 hover:bg-stone-300 text-xs font-bold" title="รีเซ็ต">
+                <i class="fa-solid fa-rotate-right"></i>
+              </button>
+            </div>
+            <p id="demoFeedbackText" class="text-[11px] sm:text-xs font-bold text-stone-700 mt-2 h-5 truncate">
+              กดเลือกเส้นทางให้แม่ลิงลองก้าวเดินดูเลย!
+            </p>
+          </div>
+
+          <!-- Q-Table Display -->
+          <div class="bg-white border-2 border-stone-800 rounded-2xl p-3 sm:p-4 shadow-[2.5px_2.5px_0px_#222]">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="font-bold text-stone-800 text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2">
+                <i class="fa-solid fa-table text-purple-600"></i> ตารางความจำ Q-Table (จำลอง)
+              </h4>
+              <span class="text-[10px] sm:text-[11px] bg-purple-100 text-purple-800 px-2 py-0.5 rounded border border-purple-400 font-bold">
+                อัปเดตสด
+              </span>
+            </div>
+            <p class="text-[11px] sm:text-xs text-stone-500 mb-2 sm:mb-3 leading-snug">
+              AI จะบันทึกคะแนนสะสมของแต่ละการกระทำ ยิ่งทางไหนได้แต้มเยอะ ครั้งต่อไป AI ก็จะเลือกทางนั้น!
+            </p>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-center border-collapse text-xs">
+                <thead>
+                  <tr class="bg-stone-100 border-2 border-stone-800">
+                    <th class="p-1.5 sm:p-2 border-r-2 border-stone-800 font-bold text-stone-700">สถานะ</th>
+                    <th class="p-1.5 sm:p-2 border-r-2 border-stone-800 font-bold text-stone-700">การกระทำ</th>
+                    <th class="p-1.5 sm:p-2 font-bold text-stone-700">ค่า Q-Value</th>
+                  </tr>
+                </thead>
+                <tbody class="font-mono">
+                  <tr id="rowUp" class="border-b-2 border-stone-800 transition-colors">
+                    <td class="p-2 border-r-2 border-stone-800 font-sans font-bold text-[11px] sm:text-xs">จุดแยกต้นไม้</td>
+                    <td class="p-2 border-r-2 border-stone-800 font-sans">
+                      <span class="bg-amber-100 px-1.5 py-0.5 rounded border border-amber-400 font-bold text-amber-900 text-[11px] sm:text-xs">⬆️ เดินขึ้น</span>
+                    </td>
+                    <td id="qValUp" class="p-2 font-bold text-sm sm:text-base text-emerald-600">+0.0</td>
+                  </tr>
+                  <tr id="rowDown" class="border-b-2 border-stone-800 transition-colors">
+                    <td class="p-2 border-r-2 border-stone-800 font-sans font-bold text-[11px] sm:text-xs">จุดแยกต้นไม้</td>
+                    <td class="p-2 border-r-2 border-stone-800 font-sans">
+                      <span class="bg-rose-100 px-1.5 py-0.5 rounded border border-rose-400 font-bold text-rose-900 text-[11px] sm:text-xs">⬇️ เดินลง</span>
+                    </td>
+                    <td id="qValDown" class="p-2 font-bold text-sm sm:text-base text-rose-600">+0.0</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="mt-2.5 p-2 bg-stone-100 rounded-lg border border-stone-300 text-[11px] text-stone-600 leading-relaxed">
+              📌 <b>หลักการตัดสินใจของ AI:</b> เมื่อเรียนรู้ไปหลายๆ รอบ AI จะเลือกเส้นทางที่มี <b>คะแนน Q-Value สูงที่สุด</b> เสมอ (เรียกว่า Exploitation)!
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         SLIDE 4: มินิเกมทดลองเล่น (Simulation GridWorld A-E x 1-3)
+         ======================================================== -->
+    <section id="slide-4" class="slide-page hidden">
+      <div class="bg-white doodle-box p-3 sm:p-4 md:p-6 bg-[#FFFDF9]">
+        <!-- Header Info Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2 sm:mb-3">
+          <div>
+            <div class="inline-flex items-center gap-1.5 bg-emerald-200 border-2 border-stone-800 px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold shadow-[1.5px_1.5px_0px_#222]">
+              <span>🌲 แผนที่ป่าไม้ RL Grid (A-E • แถว 1-3) + สมอง Q-Table</span>
+            </div>
+            <h2 class="text-lg sm:text-xl md:text-2xl font-extrabold text-stone-800 mt-1">
+              🎮 พาแม่ลิงผจญภัยกลับบ้าน (A1 ➔ E3)
+            </h2>
+          </div>
+          <!-- Game Stats HUD -->
+          <div class="flex items-center gap-1.5 sm:gap-2">
+            <div class="flex items-center gap-1 bg-purple-100 border-2 border-stone-800 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-xl text-[10px] sm:text-xs font-bold shadow-[1.5px_1.5px_0px_#222]">
+              <span class="text-stone-500">รอบ:</span>
+              <span id="gameEpisodeDisplay" class="text-purple-700 font-extrabold text-xs sm:text-sm">#1</span>
+            </div>
+            <div class="flex items-center gap-1 bg-amber-100 border-2 border-stone-800 px-2 sm:px-3 py-0.5 sm:py-1 rounded-xl text-[10px] sm:text-xs font-bold shadow-[1.5px_1.5px_0px_#222]">
+              <span class="text-stone-700">กล้วย:</span>
+              <span class="text-xs sm:text-base font-black text-amber-900"><span id="gameScoreDisplay">0</span> / 4 🍌</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="text-[11px] sm:text-xs md:text-sm text-stone-600 mb-2 sm:mb-3 leading-snug">
+          พาแม่ลิงเดินจาก <b>A1</b> ไปยังบ้าน <b>E3</b> โดยเก็บกล้วย 🍌 (+1) หลบหิน 🪨 และระวังรังมด 🐜 (-1) พร้อมสังเกตค่า <b>Q-Table ประจำช่อง</b> ด้านขวา!
+        </p>
+
+        <!-- GridWorld, D-Pad & Live Q-Table Container -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-start">
+          
+          <!-- Labyrinth Board with Coordinate Labels (Cols 1-7) -->
+          <div class="lg:col-span-7 bg-amber-50/70 border-2 sm:border-3 border-stone-800 rounded-2xl p-2 sm:p-3 shadow-[3px_3px_0px_#222] relative overflow-hidden">
+            <div class="flex justify-between items-center px-1 mb-1.5 text-[10px] sm:text-[11px] font-bold text-stone-600">
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-emerald-400 rounded-full border border-black inline-block"></span> เริ่ม: <b>A1</b></span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-amber-400 rounded-full border border-black inline-block"></span> บ้าน: <b>E3</b></span>
+            </div>
+
+            <!-- Coordinate Grid Container (Columns A-E & Rows 1-3) -->
+            <div class="select-none touch-manipulation">
+              <!-- Top Column Header (A, B, C, D, E) -->
+              <div class="grid grid-cols-[22px_repeat(5,1fr)] sm:grid-cols-[28px_repeat(5,1fr)] md:grid-cols-[34px_repeat(5,1fr)] gap-1 sm:gap-1.5 md:gap-2 mb-1 text-center font-black text-[11px] sm:text-xs md:text-sm text-stone-800">
+                <div class="flex items-center justify-center text-[9px] text-stone-400 font-bold">ช่อง</div>
+                <div class="bg-amber-200 border border-stone-800 sm:border-2 rounded-md sm:rounded-lg py-0.5 shadow-[1px_1px_0px_#222]">A</div>
+                <div class="bg-amber-200 border border-stone-800 sm:border-2 rounded-md sm:rounded-lg py-0.5 shadow-[1px_1px_0px_#222]">B</div>
+                <div class="bg-amber-200 border border-stone-800 sm:border-2 rounded-md sm:rounded-lg py-0.5 shadow-[1px_1px_0px_#222]">C</div>
+                <div class="bg-amber-200 border border-stone-800 sm:border-2 rounded-md sm:rounded-lg py-0.5 shadow-[1px_1px_0px_#222]">D</div>
+                <div class="bg-amber-200 border border-stone-800 sm:border-2 rounded-md sm:rounded-lg py-0.5 shadow-[1px_1px_0px_#222]">E</div>
+              </div>
+
+              <!-- Grid Rows (1, 2, 3) generated via JavaScript -->
+              <div id="gridBoardRows" class="space-y-1 sm:space-y-1.5 md:space-y-2">
+                <!-- Dynamically populated via JS -->
+              </div>
+            </div>
+
+            <!-- Floating Feedback Notification on Map -->
+            <div id="gridFloatingFeedback" class="hidden absolute top-2 left-1/2 -translate-x-1/2 bg-white/95 border-2 border-stone-800 px-2.5 py-0.5 rounded-full text-[11px] font-black shadow-[1.5px_1.5px_0px_#000] z-20 transition-all pointer-events-none">
+              🍌 +1 แต้ม!
+            </div>
+          </div>
+
+          <!-- Controls & Live Q-Table Panel (Cols 8-12) -->
+          <div class="lg:col-span-5 flex flex-col gap-2.5 sm:gap-3">
+            
+            <!-- Live Q-Table Box for Current State -->
+            <div class="bg-white border-2 border-stone-800 rounded-2xl p-2.5 sm:p-3 shadow-[2.5px_2.5px_0px_#222]">
+              <div class="flex items-center justify-between mb-1.5">
+                <div class="flex items-center gap-1 sm:gap-1.5">
+                  <span class="text-sm sm:text-base">🧠</span>
+                  <h4 class="font-extrabold text-stone-800 text-[11px] sm:text-xs md:text-sm">ตาราง Q-Table ประจำช่อง</h4>
+                </div>
+                <span id="currentCoordBadge" class="bg-purple-100 text-purple-900 border-2 border-purple-400 text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-full shadow-[1px_1px_0px_#222]">
+                  พิกัด A1
+                </span>
+              </div>
+              <p class="text-[10px] sm:text-[11px] text-stone-500 mb-1.5 leading-tight">
+                ค่า Q-Value ประเมินผลตอบแทนแต่ละทิศทาง:
+              </p>
+
+              <!-- Q-Table Rows -->
+              <div class="border-2 border-stone-800 rounded-xl overflow-hidden text-xs">
+                <table class="w-full text-center border-collapse">
+                  <thead>
+                    <tr class="bg-stone-100 border-b-2 border-stone-800 text-stone-700 font-bold text-[10px] sm:text-[11px]">
+                      <th class="p-1 sm:p-1.5 border-r border-stone-400">ทิศทาง</th>
+                      <th class="p-1 sm:p-1.5 border-r border-stone-400">ค่า Q</th>
+                      <th class="p-1 sm:p-1.5">ผลตัดสินใจ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="qTableRows" class="font-mono text-[10px] sm:text-[11px]">
+                    <!-- Populated dynamically via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Virtual D-Pad for Touch & Desktop -->
+            <div class="bg-stone-50 border-2 border-stone-800 rounded-2xl p-2 sm:p-2.5 shadow-[2.5px_2.5px_0px_#222] text-center">
+              <div class="text-[10px] sm:text-[11px] font-extrabold text-stone-600 uppercase tracking-wide mb-1 flex items-center justify-center gap-1">
+                <i class="fa-solid fa-gamepad text-amber-600"></i> บังคับแม่ลิง (Action)
+              </div>
+              
+              <div class="w-24 h-24 sm:w-28 sm:h-28 mx-auto grid grid-cols-3 grid-rows-3 gap-1">
+                <div></div>
+                <button id="ctrlUp" onclick="moveMonkey(0, -1, 'up')" class="doodle-btn bg-white hover:bg-amber-200 border-2 border-stone-800 rounded-xl flex items-center justify-center text-sm sm:text-base font-black active:translate-y-1">⬆️</button>
+                <div></div>
+                
+                <button id="ctrlLeft" onclick="moveMonkey(-1, 0, 'left')" class="doodle-btn bg-white hover:bg-amber-200 border-2 border-stone-800 rounded-xl flex items-center justify-center text-sm sm:text-base font-black active:translate-y-1">⬅️</button>
+                <div class="flex items-center justify-center text-[9px] sm:text-[10px] font-bold text-stone-400 bg-stone-100 rounded-lg border border-stone-300">เดิน</div>
+                <button id="ctrlRight" onclick="moveMonkey(1, 0, 'right')" class="doodle-btn bg-white hover:bg-amber-200 border-2 border-stone-800 rounded-xl flex items-center justify-center text-sm sm:text-base font-black active:translate-y-1">➡️</button>
+                
+                <div></div>
+                <button id="ctrlDown" onclick="moveMonkey(0, 1, 'down')" class="doodle-btn bg-white hover:bg-amber-200 border-2 border-stone-800 rounded-xl flex items-center justify-center text-sm sm:text-base font-black active:translate-y-1">⬇️</button>
+                <div></div>
+              </div>
+            </div>
+
+            <!-- RL View Toggles & Reset -->
+            <div class="grid grid-cols-2 gap-1.5 sm:gap-2">
+              <button id="btnToggleQOverlay" onclick="toggleQOverlay()" class="doodle-btn px-1.5 sm:px-2 py-1.5 bg-purple-100 hover:bg-purple-200 border-2 border-stone-800 rounded-xl text-stone-800 text-[10px] sm:text-[11px] font-bold flex items-center justify-center gap-1">
+                <i class="fa-solid fa-chart-simple"></i>
+                <span id="qOverlayBtnText" class="truncate">ค่า Q บนแผนที่</span>
+              </button>
+
+              <button id="btnToggleRadar" onclick="toggleRadarSensor()" class="doodle-btn px-1.5 sm:px-2 py-1.5 bg-sky-100 hover:bg-sky-200 border-2 border-stone-800 rounded-xl text-stone-800 text-[10px] sm:text-[11px] font-bold flex items-center justify-center gap-1">
+                <i class="fa-solid fa-eye"></i>
+                <span>เรดาร์: <span id="radarStatusText">ปิด</span></span>
+              </button>
+            </div>
+
+            <!-- Reset Episode Button -->
+            <button onclick="resetMiniGame(false)" class="doodle-btn py-1.5 sm:py-2 px-2.5 sm:px-3 bg-stone-200 hover:bg-stone-300 text-stone-800 font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-arrow-rotate-left"></i>
+              <span>เริ่มฝึกรอบใหม่ (จำ Q-Table ไว้)</span>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Live Step Instruction & Feedback -->
+        <div class="mt-2.5 sm:mt-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-1.5 sm:gap-2">
+          <div id="gameStepMessage" class="text-[11px] sm:text-xs md:text-sm font-bold text-stone-700 bg-stone-100 border border-stone-300 px-2.5 sm:px-3 py-1.5 rounded-lg flex-1 leading-snug">
+            🧭 <b>เริ่มต้น:</b> แม่ลิงอยู่ที่ช่อง <b>A1</b> คลิกเลือกช่องหรือกดปุ่มลูกศรเพื่อนำทางกลับบ้าน!
+          </div>
+          <div id="gameWinBadge" class="hidden text-xs bg-emerald-100 border border-emerald-600 text-emerald-800 px-2.5 py-1 rounded-lg font-black animate-pulse text-center">
+            🎉 ถึงบ้าน E3 แล้ว! กด "ถัดไป" ด้านล่างเพื่อไปทำควิซ
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         SLIDE 5: กิจกรรมทบทวนความรู้ (Gamified Quiz - 10 ข้อ)
+         ======================================================== -->
+    <section id="slide-5" class="slide-page hidden">
+      <div class="bg-white doodle-box p-3.5 sm:p-5 md:p-8 bg-[#FFFDF9]">
+        <div class="flex items-center justify-between mb-3 sm:mb-4 border-b-2 border-stone-800 pb-2.5 sm:pb-3">
+          <div>
+            <div class="inline-block bg-rose-200 border-2 border-stone-800 px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold shadow-[1.5px_1.5px_0px_#222]">
+              กิจกรรมลับสมอง ม.1
+            </div>
+            <h2 class="text-lg sm:text-xl md:text-2xl font-extrabold text-stone-800 mt-0.5 sm:mt-1">
+              ✏️ ภารกิจทบทวนความรู้ (10 ข้อ)
+            </h2>
+          </div>
+          <div class="text-right">
+            <span class="text-[10px] sm:text-xs text-stone-500 font-bold block">คะแนนควิซ</span>
+            <span class="text-base sm:text-xl font-black text-rose-600">
+              <span id="quizScoreText">0</span> / 10 แต้ม
+            </span>
+          </div>
+        </div>
+
+        <!-- Quiz Container: Shows 1 question at a time -->
+        <div id="quizCardContainer" class="max-w-2xl mx-auto">
+          <!-- Question Header -->
+          <div class="bg-amber-100 border-2 border-stone-800 rounded-2xl p-3 sm:p-4 mb-3 sm:mb-4 shadow-[2.5px_2.5px_0px_#222] relative">
+            <span id="quizBadgeNum" class="absolute -top-3 left-3 sm:left-4 bg-stone-800 text-white text-[10px] sm:text-xs px-2.5 sm:px-3 py-0.5 rounded-full font-bold">
+              คำถามที่ 1 จาก 10
+            </span>
+            <h3 id="quizQuestionText" class="text-sm sm:text-base md:text-lg font-bold text-stone-900 mt-1 leading-snug">
+              กำลังโหลดคำถาม...
+            </h3>
+          </div>
+
+          <!-- 4 Options -->
+          <div id="quizOptionsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 mb-3 sm:mb-4">
+            <!-- Dynamically populated options buttons -->
+          </div>
+
+          <!-- Immediate Feedback Banner -->
+          <div id="quizFeedbackBox" class="hidden p-3 sm:p-3.5 border-2 border-stone-800 rounded-xl mb-3 text-xs md:text-sm font-bold shadow-[2px_2px_0px_#222]">
+            <div id="feedbackTitle" class="text-xs sm:text-sm font-extrabold mb-0.5"></div>
+            <div id="feedbackDetail" class="font-normal text-stone-700 text-[11px] sm:text-xs"></div>
+          </div>
+
+          <!-- Next Question Button -->
+          <div class="flex justify-end">
+            <button id="btnNextQuestion" onclick="goToNextQuestion()" disabled
+              class="doodle-btn px-4 sm:px-5 py-2 sm:py-2.5 bg-amber-300 hover:bg-amber-400 font-bold text-xs sm:text-sm text-stone-900 flex items-center gap-1.5">
+              <span>ข้อถัดไป</span>
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         SLIDE 6: สรุปผลและส่งคะแนน (Scoreboard & Submission)
+         ======================================================== -->
+    <section id="slide-6" class="slide-page hidden">
+      <div class="bg-white doodle-box p-4 sm:p-6 md:p-10 max-w-2xl mx-auto text-center bg-[#FFFDF9] relative">
+        <div class="absolute -top-3 left-4 sm:left-6 text-2xl sm:text-3xl">🎉</div>
+        <div class="absolute -top-3 right-4 sm:right-6 text-2xl sm:text-3xl">🏆</div>
+
+        <div class="inline-block bg-emerald-200 border-2 border-stone-800 px-3 sm:px-4 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2 shadow-[1.5px_1.5px_0px_#222]">
+          ภารกิจเสร็จสมบูรณ์!
+        </div>
+        <h2 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-stone-800 mb-1">
+          ใบบันทึกผลการเรียนรู้ AI
+        </h2>
+        <p class="text-stone-500 text-xs sm:text-sm mb-4 sm:mb-5">
+          เก่งมาก! แม่ลิงเดินทางกลับบ้านสำเร็จ และน้องๆ เข้าใจหัวใจของ RL แล้ว
+        </p>
+
+        <!-- Student Certificate Card -->
+        <div class="bg-stone-50 border-2 sm:border-3 border-stone-800 rounded-2xl p-3.5 sm:p-5 mb-4 sm:mb-5 shadow-[3px_3px_0px_#222] text-left relative overflow-hidden">
+          <div class="flex flex-wrap items-center justify-between border-b-2 border-dashed border-stone-300 pb-2.5 sm:pb-3 mb-2.5 sm:mb-3 gap-2">
+            <div>
+              <span class="text-[10px] sm:text-xs text-stone-400 block font-bold">ชื่อผู้เรียน</span>
+              <span id="summaryName" class="text-sm sm:text-base md:text-lg font-black text-stone-800">-</span>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] sm:text-xs text-stone-400 block font-bold">ระดับชั้น / เลขที่</span>
+              <span id="summaryClassNum" class="text-xs sm:text-sm md:text-base font-bold text-stone-800">ม.1/10 เลขที่ -</span>
+            </div>
+          </div>
+
+          <!-- Total Score Breakdown - Responsive 3 Cols on Mobile -->
+          <div class="grid grid-cols-3 gap-1.5 sm:gap-2 text-center my-2 sm:my-3">
+            <div class="bg-white p-2 sm:p-2.5 rounded-xl border-2 border-stone-800 shadow-[1.5px_1.5px_0px_#222]">
+              <span class="text-[9px] sm:text-[11px] text-stone-500 font-bold block truncate">เกมเก็บกล้วย</span>
+              <span id="summaryGameScore" class="text-base sm:text-lg font-black text-amber-600">0</span>
+              <span class="text-[9px] sm:text-[10px] text-stone-400 block">/ 4 แต้ม</span>
+            </div>
+            <div class="bg-white p-2 sm:p-2.5 rounded-xl border-2 border-stone-800 shadow-[1.5px_1.5px_0px_#222]">
+              <span class="text-[9px] sm:text-[11px] text-stone-500 font-bold block truncate">ควิซ 10 ข้อ</span>
+              <span id="summaryQuizScore" class="text-base sm:text-lg font-black text-rose-600">0</span>
+              <span class="text-[9px] sm:text-[10px] text-stone-400 block">/ 10 แต้ม</span>
+            </div>
+            <div class="bg-amber-100 p-2 sm:p-2.5 rounded-xl border-2 border-stone-800 shadow-[1.5px_1.5px_0px_#222]">
+              <span class="text-[9px] sm:text-[11px] text-amber-800 font-bold block truncate">รวมทั้งหมด</span>
+              <span id="summaryTotalScore" class="text-lg sm:text-2xl font-black text-stone-900">0</span>
+              <span class="text-[9px] sm:text-[10px] text-stone-600 font-bold block">/ 14 แต้ม</span>
+            </div>
+          </div>
+
+          <!-- Doodle Badge Reward -->
+          <div id="badgeContainer" class="mt-3 sm:mt-4 p-2.5 sm:p-3 bg-white border-2 border-stone-800 rounded-xl flex items-center gap-2.5 sm:gap-3 shadow-[1.5px_1.5px_0px_#222]">
+            <div id="badgeIcon" class="text-3xl sm:text-4xl shrink-0">🏅</div>
+            <div>
+              <div id="badgeTitle" class="font-extrabold text-xs sm:text-sm text-stone-800">เหรียญทอง: ยอดนักฝึกสอน AI</div>
+              <div id="badgeDesc" class="text-[10px] sm:text-xs text-stone-500 leading-snug">ยอดเยี่ยมมาก! เข้าใจกลไก Reward และ Agent ได้อย่างสมบูรณ์แบบ</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Google Sheet Submission Section -->
+        <div class="space-y-2.5 sm:space-y-3">
+          <button id="btnSubmitScore" onclick="submitScoreToGoogleSheet()"
+            class="doodle-btn w-full py-3 sm:py-3.5 px-4 sm:px-6 bg-emerald-400 hover:bg-emerald-500 font-extrabold text-sm sm:text-base md:text-lg text-stone-900 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span>บันทึกและส่งคะแนนเข้าคุณครู</span>
+          </button>
+
+          <!-- Submission Status Notice -->
+          <div id="submitStatusBox" class="hidden p-2.5 sm:p-3 rounded-xl border-2 border-stone-800 text-xs md:text-sm font-bold shadow-[2px_2px_0px_#222] transition-all">
+            <!-- Dynamic submission text -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================
+       MODAL: กิจกรรมเชื่อมโยงโลกจริง "RL รอบตัวเรา" (Real-World RL Explorer)
+       ======================================================== -->
+  <div id="realWorldModal" class="hidden fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-4 md:p-6 overflow-y-auto">
+    <div class="bg-[#FFFDF9] doodle-box p-3.5 sm:p-5 md:p-7 max-w-4xl w-full max-h-[90dvh] overflow-y-auto relative my-auto">
+      
+      <!-- Modal Header -->
+      <div class="flex items-start justify-between border-b-2 border-stone-800 pb-2.5 sm:pb-3 mb-3 sm:mb-4 gap-2">
+        <div class="flex items-center gap-2 sm:gap-2.5">
+          <span class="text-2xl sm:text-3xl shrink-0">🌍</span>
+          <div>
+            <div class="inline-block bg-indigo-200 border border-stone-800 px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-black uppercase shadow-[1px_1px_0px_#222]">
+              Real-World AI Applications
+            </div>
+            <h3 class="text-base sm:text-lg md:text-2xl font-black text-stone-800 leading-tight">
+              RL รอบตัวเรา: ในชีวิตจริงเขาเอาไปทำอะไรกันนะ?
+            </h3>
+            <p class="text-[11px] sm:text-xs text-stone-500 font-medium hidden xs:block">
+              คลิกที่การ์ดเพื่อ <b>"พลิกดูสูตรลับ"</b> ว่าเทคโนโลยีเหล่านี้ใช้ 4 สหาย RL อย่างไร!
+            </p>
+          </div>
+        </div>
+
+        <button onclick="closeRealWorldModal()" 
+          class="doodle-btn w-8 h-8 sm:w-9 sm:h-9 bg-rose-200 hover:bg-rose-300 text-stone-900 font-black rounded-full flex items-center justify-center text-xs sm:text-sm shadow-[1.5px_1.5px_0px_#222] shrink-0"
+          title="ปิดหน้าต่าง">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- 3 Real-World Flip Cards Grid - Responsive Heights -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 perspective-1000 mb-3 sm:mb-4">
+        
+        <!-- Card 1: ROV / AlphaGo -->
+        <div class="h-64 sm:h-72 md:h-80 cursor-pointer select-none" onclick="toggleRealWorldCard(this, 'rov')">
+          <div class="card-inner w-full h-full shadow-[2.5px_3px_0px_#222] border-2 border-stone-800 rounded-2xl">
+            <!-- Front -->
+            <div class="card-front bg-purple-50 p-3 sm:p-4 flex flex-col justify-between items-center border border-dashed border-purple-300">
+              <span class="text-[10px] sm:text-[11px] bg-purple-200 border border-stone-800 px-2 py-0.5 rounded-full font-bold text-purple-950">ตัวอย่างที่ 1</span>
+              <div class="text-center">
+                <div class="text-4xl sm:text-5xl my-1 sm:my-2">🎮</div>
+                <h4 class="text-sm sm:text-base font-extrabold text-stone-800">บอทเกม ROV / หมากรุก AlphaGo</h4>
+                <p class="text-[10px] sm:text-[11px] text-stone-500 font-semibold mt-0.5">เกมเมอร์ AI ระดับเซียน</p>
+              </div>
+              <div class="text-[10px] sm:text-[11px] text-purple-700 bg-purple-100 px-2.5 py-1 rounded-lg border border-purple-300 font-bold">
+                👆 แตะเพื่อดูการทำงาน
+              </div>
+            </div>
+            <!-- Back -->
+            <div class="card-back bg-purple-100 p-3 sm:p-3.5 flex flex-col justify-between text-left text-stone-800 border-2 border-stone-800 overflow-y-auto">
+              <div>
+                <h5 class="font-black text-xs sm:text-sm text-purple-950 border-b border-purple-300 pb-1 mb-1.5 flex items-center gap-1.5">
+                  <span>🎮</span> บอทเกมฝึกยังไงให้เก่งกาจ?
+                </h5>
+                <ul class="text-[10px] sm:text-[11px] space-y-1 sm:space-y-1.5 leading-snug">
+                  <li>🤖 <b>Agent:</b> โปรแกรมบอท AI ตัวละคร</li>
+                  <li>🗺️ <b>Environment:</b> แผนที่สนามแข่ง & คู่ต่อสู้</li>
+                  <li>🧭 <b>Action:</b> สั่งเดิน, โจมตี, ออกสกิลคอมโบ</li>
+                  <li>⭐ <b>Reward:</b> <span class="text-emerald-700 font-bold">ชนะเกม (+1)</span> / <span class="text-rose-700 font-bold">แพ้หรือโดนป้อมยิง (-1)</span></li>
+                </ul>
+              </div>
+              <div class="bg-white/90 p-1.5 sm:p-2 rounded-lg border border-stone-800 text-[9px] sm:text-[10px] text-stone-700 mt-1.5">
+                💡 <b>ความลับ:</b> บอทเล่นกับตัวเองเป็นล้านๆ รอบ จนค้นพบกลยุทธ์ที่มนุษย์คาดไม่ถึง!
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Robot Vacuum -->
+        <div class="h-64 sm:h-72 md:h-80 cursor-pointer select-none" onclick="toggleRealWorldCard(this, 'vacuum')">
+          <div class="card-inner w-full h-full shadow-[2.5px_3px_0px_#222] border-2 border-stone-800 rounded-2xl">
+            <!-- Front -->
+            <div class="card-front bg-teal-50 p-3 sm:p-4 flex flex-col justify-between items-center border border-dashed border-teal-300">
+              <span class="text-[10px] sm:text-[11px] bg-teal-200 border border-stone-800 px-2 py-0.5 rounded-full font-bold text-teal-950">ตัวอย่างที่ 2</span>
+              <div class="text-center">
+                <div class="text-4xl sm:text-5xl my-1 sm:my-2">🧹</div>
+                <h4 class="text-sm sm:text-base font-extrabold text-stone-800">หุ่นยนต์ดูดฝุ่นอัจฉริยะ</h4>
+                <p class="text-[10px] sm:text-[11px] text-stone-500 font-semibold mt-0.5">ผู้พิทักษ์บ้านสะอาด</p>
+              </div>
+              <div class="text-[10px] sm:text-[11px] text-teal-700 bg-teal-100 px-2.5 py-1 rounded-lg border border-teal-300 font-bold">
+                👆 แตะเพื่อดูการทำงาน
+              </div>
+            </div>
+            <!-- Back -->
+            <div class="card-back bg-teal-100 p-3 sm:p-3.5 flex flex-col justify-between text-left text-stone-800 border-2 border-stone-800 overflow-y-auto">
+              <div>
+                <h5 class="font-black text-xs sm:text-sm text-teal-950 border-b border-teal-300 pb-1 mb-1.5 flex items-center gap-1.5">
+                  <span>🧹</span> หุ่นยนต์รู้ได้ไงว่าตรงไหนสกปรก?
+                </h5>
+                <ul class="text-[10px] sm:text-[11px] space-y-1 sm:space-y-1.5 leading-snug">
+                  <li>🤖 <b>Agent:</b> หุ่นยนต์ดูดฝุ่นรูปจานบิน</li>
+                  <li>🗺️ <b>Environment:</b> ห้อง, เฟอร์นิเจอร์, บันไดบ้าน</li>
+                  <li>🧭 <b>Action:</b> เคลื่อนตรง, เลี้ยว 90°, ถอยหลัง</li>
+                  <li>⭐ <b>Reward:</b> <span class="text-emerald-700 font-bold">เก็บฝุ่นสะอาด (+1)</span> / <span class="text-rose-700 font-bold">ชนขาโต๊ะหรือตกบันได (-1)</span></li>
+                </ul>
+              </div>
+              <div class="bg-white/90 p-1.5 sm:p-2 rounded-lg border border-stone-800 text-[9px] sm:text-[10px] text-stone-700 mt-1.5">
+                💡 <b>ความลับ:</b> หุ่นยนต์จะจำแผนที่บ้านได้แม่นยำขึ้นเรื่อยๆ โดยไม่ต้องมีคนคอยอุ้ม!
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: Self-Driving Car -->
+        <div class="h-64 sm:h-72 md:h-80 cursor-pointer select-none" onclick="toggleRealWorldCard(this, 'car')">
+          <div class="card-inner w-full h-full shadow-[2.5px_3px_0px_#222] border-2 border-stone-800 rounded-2xl">
+            <!-- Front -->
+            <div class="card-front bg-sky-50 p-3 sm:p-4 flex flex-col justify-between items-center border border-dashed border-sky-300">
+              <span class="text-[10px] sm:text-[11px] bg-sky-200 border border-stone-800 px-2 py-0.5 rounded-full font-bold text-sky-950">ตัวอย่างที่ 3</span>
+              <div class="text-center">
+                <div class="text-4xl sm:text-5xl my-1 sm:my-2">🚗</div>
+                <h4 class="text-sm sm:text-base font-extrabold text-stone-800">รถยนต์ไร้คนขับ</h4>
+                <p class="text-[10px] sm:text-[11px] text-stone-500 font-semibold mt-0.5">นักขับขี่แห่งอนาคต</p>
+              </div>
+              <div class="text-[10px] sm:text-[11px] text-sky-700 bg-sky-100 px-2.5 py-1 rounded-lg border border-sky-300 font-bold">
+                👆 แตะเพื่อดูการทำงาน
+              </div>
+            </div>
+            <!-- Back -->
+            <div class="card-back bg-sky-100 p-3 sm:p-3.5 flex flex-col justify-between text-left text-stone-800 border-2 border-stone-800 overflow-y-auto">
+              <div>
+                <h5 class="font-black text-xs sm:text-sm text-sky-950 border-b border-sky-300 pb-1 mb-1.5 flex items-center gap-1.5">
+                  <span>🚗</span> รถยนต์เรียนรู้การขับอย่างไร?
+                </h5>
+                <ul class="text-[10px] sm:text-[11px] space-y-1 sm:space-y-1.5 leading-snug">
+                  <li>🤖 <b>Agent:</b> ระบบคอมพิวเตอร์ควบคุมรถยนต์</li>
+                  <li>🗺️ <b>Environment:</b> ถนน, ไฟจราจร, คนเดินเท้า</li>
+                  <li>🧭 <b>Action:</b> หมุนพวงมาลัย, เหยียบคันเร่ง, เบรก</li>
+                  <li>⭐ <b>Reward:</b> <span class="text-emerald-700 font-bold">ถึงที่หมายปลอดภัย (+1)</span> / <span class="text-rose-700 font-bold">ขับออกนอกเลนหรือชนสิ่งกีดขวาง (-1)</span></li>
+                </ul>
+              </div>
+              <div class="bg-white/90 p-1.5 sm:p-2 rounded-lg border border-stone-800 text-[9px] sm:text-[10px] text-stone-700 mt-1.5">
+                💡 <b>ความลับ:</b> รถยนต์จำลองการฝึกขับบนคอมพิวเตอร์นับร้อยล้านกิโลเมตรก่อนลงถนนจริง!
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Exploration Progress Banner & Close Action -->
+      <div class="bg-amber-50 border-2 border-stone-800 rounded-xl p-2.5 sm:p-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 text-xs">
+        <div class="flex items-center gap-2">
+          <span id="realWorldExploredBadge" class="text-base shrink-0">👀</span>
+          <span id="realWorldExploredText" class="font-bold text-stone-700 text-[11px] sm:text-xs">
+            แตะพลิกการ์ดให้ครบทั้ง 3 ตัวอย่าง (<span id="exploredCount">0</span>/3)
+          </span>
+        </div>
+
+        <button onclick="closeRealWorldModal()" 
+          class="doodle-btn px-4 py-1.5 sm:py-2 bg-amber-300 hover:bg-amber-400 text-stone-900 font-bold text-xs rounded-xl">
+          <span>เข้าใจแล้ว ลุยต่อเลย!</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Bottom Slide Navigation Controls -->
+  <footer class="w-full max-w-5xl mx-auto mt-2.5 sm:mt-4">
+    <div class="bg-white doodle-box px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between bg-[#FFFDF9] gap-2">
+      <button id="btnPrevSlide" onclick="navigateSlide(-1)" disabled
+        class="doodle-btn px-3 sm:px-4 py-1.5 sm:py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2">
+        <i class="fa-solid fa-arrow-left"></i>
+        <span>ย้อนกลับ</span>
+      </button>
+
+      <div class="text-[11px] text-stone-400 font-medium hidden sm:block">
+        กดปุ่มนำทางเพื่อเรียนรู้ทีละขั้นตอน
+      </div>
+
+      <button id="btnNextSlide" onclick="navigateSlide(1)"
+        class="doodle-btn px-4 sm:px-5 py-1.5 sm:py-2 bg-amber-300 hover:bg-amber-400 text-stone-900 font-bold text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2">
+        <span>ถัดไป</span>
+        <i class="fa-solid fa-arrow-right"></i>
+      </button>
+    </div>
+  </footer>
+
+  <script>
+    /* ==========================================================================
+       GOOGLE APPS SCRIPT WEB APP URL (ใส่ URL ที่ Deploy เป็น Web App ที่นี่)
+       ========================================================================== */
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzm6o47qnmsu1-6mRRG1WE97dYA_Pud376XXP6hjrDQP82Br8gVjnZ2cDFhaJKFmcV6Ag/exec";
+
+    // Helper: Convert (x, y) coordinates to Chessboard / Grid Label like A1, B2, E3
+    const COL_LETTERS = ['A', 'B', 'C', 'D', 'E'];
+    function getCoordLabel(x, y) {
+      return `${COL_LETTERS[x] || '?'}${y + 1}`;
+    }
+
+    /* App Global State */
+    const appState = {
+      currentSlide: 1,
+      totalSlides: 6,
+      student: {
+        name: "",
+        classRoom: "",
+        number: ""
+      },
+      qTable: {
+        up: 0.0,
+        down: 0.0
+      },
+      miniGame: {
+        episode: 1,
+        score: 0,
+        completed: false,
+        playerPos: { x: 0, y: 0 }, // Start at A1 (x=0, y=0)
+        visitedCells: new Set(["0,0"]),
+        radarEnabled: false,
+        showQOverlay: false,
+        lastAction: null,
+        gridWidth: 5,  // Columns: A, B, C, D, E (0..4)
+        gridHeight: 3, // Rows: 1, 2, 3 (0..2)
+        qTableGrid: null,
+        // 5x3 Labyrinth Map (Cols A-E, Rows 1-3):
+        map: [
+          // Row 1 (y=0): A1 (Start), B1 (Empty), C1 (Banana), D1 (Rock), E1 (Banana)
+          [ { type: 'start' },  { type: 'empty' },  { type: 'banana' }, { type: 'rock' },   { type: 'banana' } ],
+          // Row 2 (y=1): A2 (Ant), B2 (Empty), C2 (Rock), D2 (Banana), E2 (Empty)
+          [ { type: 'ant' },    { type: 'empty' },  { type: 'rock' },   { type: 'banana' }, { type: 'empty' }  ],
+          // Row 3 (y=2): A3 (Empty), B3 (Banana), C3 (Ant), D3 (Empty), E3 (Home)
+          [ { type: 'empty' },  { type: 'banana' }, { type: 'ant' },    { type: 'empty' },  { type: 'home' }   ]
+        ]
+      },
+      quiz: {
+        currentIndex: 0,
+        score: 0,
+        questions: [
+          {
+            q: "1. ในสถานการณ์นี้ 'แม่ลิง' เปรียบเสมือนองค์ประกอบใดของระบบการเรียนรู้แบบเสริมแรง (RL)?",
+            options: [
+              { text: "ก. สิ่งแวดล้อม (Environment)", isCorrect: false },
+              { text: "ข. ตัวกระทำหรือผู้กระทำ (Agent)", isCorrect: true },
+              { text: "ค. รางวัล (Reward)", isCorrect: false },
+              { text: "ง. ตารางความจำ (Q-Table)", isCorrect: false }
+            ],
+            explanation: "ถูกต้องแล้ว! Agent (ตัวกระทำ) คือ ผู้ที่ทำหน้าที่ตัดสินใจและเรียนรู้ลองผิดลองถูก ซึ่งในที่นี้คือแม่ลิงนั่นเอง"
+          },
+          {
+            q: "2. หากแม่ลิงเดินเหยียบ 'รังมด' แล้วถูกหักคะแนน (-1) เหตุการณ์นี้สอดคล้องกับเรื่องใดมากที่สุด?",
+            options: [
+              { text: "ก. การลงโทษหรือรางวัลติดลบ (Penalty / Negative Reward)", isCorrect: true },
+              { text: "ข. การเปลี่ยนสภาพแวดล้อมใหม่ (New Environment)", isCorrect: false },
+              { text: "ค. การหยุดทำงานของโปรแกรม (Program Termination)", isCorrect: false },
+              { text: "ง. การกระทำที่ AI ควรรีบทำซ้ำอีกเรื่อยๆ", isCorrect: false }
+            ],
+            explanation: "แม่นยำมาก! ค่า -1 คือ บทลงโทษ (Penalty) เพื่อสอนให้ AI รู้ว่าเส้นทางนี้ไม่คุ้มค่า และหลีกเลี่ยงในอนาคต"
+          },
+          {
+            q: "3. เป้าหมายสูงสุดของปัญญาประดิษฐ์ (AI) ในการเรียนรู้แบบ Reinforcement Learning คืออะไร?",
+            options: [
+              { text: "ก. เดินสุ่มไปเรื่อยๆ โดยไม่ต้องจำเส้นทาง", isCorrect: false },
+              { text: "ข. หาวิธีการเพื่อให้ได้ผลตอบแทนหรือคะแนนสะสมรวมสูงสุด", isCorrect: true },
+              { text: "ค. รอให้มนุษย์เขียนกฎบอกเส้นทางทุกก้าวอย่างละเอียด", isCorrect: false },
+              { text: "ง. การเลือกลงโทษตัวเองให้บ่อยที่สุด", isCorrect: false }
+            ],
+            explanation: "ยอดเยี่ยมที่สุด! หัวใจของ RL คือการที่ AI พยายามหากลยุทธ์ (Policy) เพื่อเก็บเกี่ยวคะแนนสะสมรวม (Cumulative Reward) ให้ได้มากที่สุด"
+          },
+          {
+            q: "4. แผนที่ป่าเขาวงกต ช่องทางเดิน ก้อนหิน และรังมด เปรียบเสมือนองค์ประกอบใดในระบบ RL?",
+            options: [
+              { text: "ก. ตัวกระทำ (Agent)", isCorrect: false },
+              { text: "ข. สิ่งแวดล้อม (Environment)", isCorrect: true },
+              { text: "ค. แบตเตอรี่ของหุ่นยนต์", isCorrect: false },
+              { text: "ง. ป้ายคะแนนรวม", isCorrect: false }
+            ],
+            explanation: "ถูกต้อง! สิ่งแวดล้อม (Environment) คือ โลก กฎเกณฑ์ หรือพื้นที่รอบตัวที่ Agent อาศัยอยู่และส่งข้อมูลกลับมาให้ตัวกระทำรับรู้"
+          },
+          {
+            q: "5. การที่แม่ลิงตัดสินใจเลือกว่าจะ 'เดินขึ้น' 'เดินลง' 'เดินซ้าย' หรือ 'เดินขวา' จัดเป็นสิ่งใด?",
+            options: [
+              { text: "ก. การกระทำ (Action)", isCorrect: true },
+              { text: "ข. สิ่งแวดล้อม (Environment)", isCorrect: false },
+              { text: "ค. สมองกลถาวร", isCorrect: false },
+              { text: "ง. การลงโทษ (Penalty)", isCorrect: false }
+            ],
+            explanation: "เป๊ะมาก! Action (การกระทำ) คือ คำสั่งหรือทางเลือกที่ตัวกระทำเลือกปฏิบัติเพื่อเคลื่อนที่หรือเปลี่ยนสถานะ"
+          },
+          {
+            q: "6. ทำไมในการฝึกรอบแรก (Episode 1) แม่ลิงจึงมักเดินชนหินหรือเดินเหยียบรังมด?",
+            options: [
+              { text: "ก. เพราะแม่ลิงตั้งใจแกล้งผู้เล่น", isCorrect: false },
+              { text: "ข. เพราะ AI ยังไม่มีข้อมูลความจำ จึงต้องใช้การลองผิดลองถูก (Trial & Error)", isCorrect: true },
+              { text: "ค. เพราะระบบคอมพิวเตอร์ทำงานขัดข้อง", isCorrect: false },
+              { text: "ง. เพราะช่องหินสามารถเดินทะลุผ่านได้", isCorrect: false }
+            ],
+            explanation: "ถูกต้องที่สุด! ตอนเริ่มต้น AI ยังมีตาราง Q-Table ที่ว่างเปล่า จึงต้องอาศัยการลองผิดลองถูก (Trial and Error) เพื่อเก็บเกี่ยวประสบการณ์"
+          },
+          {
+            q: "7. ตาราง Q-Table ทำหน้าที่เปรียบเสมือนสิ่งใดของสมอง AI?",
+            options: [
+              { text: "ก. ตะกร้าสำหรับใส่กล้วย", isCorrect: false },
+              { text: "ข. สมุดจดบันทึกความจำว่าเดินไปทิศไหนแล้วคุ้มค่าที่สุด", isCorrect: true },
+              { text: "ค. นาฬิกาจับเวลาถอยหลัง", isCorrect: false },
+              { text: "ง. รีโมทสำหรับให้มนุษย์คอยบังคับ", isCorrect: false }
+            ],
+            explanation: "เก่งมาก! Q-Table เปรียบเสมือนสมุดบันทึกคะแนนความคุ้มค่า (Q-Value) ของแต่ละ Action ในแต่ละ State ทำให้ AI ตัดสินใจได้ฉลาดขึ้นเรื่อยๆ"
+          },
+          {
+            q: "8. ในชีวิตจริง 'หุ่นยนต์ดูดฝุ่นอัจฉริยะ' เรียนรู้แบบ Reinforcement Learning อย่างไร?",
+            options: [
+              { text: "ก. เดินชนโต๊ะได้คะแนนบวก (+) แต่ดูดฝุ่นได้แต้มลบ (-)", isCorrect: false },
+              { text: "ข. ดูดฝุ่นสะอาดได้รางวัล (+1) แต่ชนขาโต๊ะหรือตกบันไดได้รับบทลงโทษ (-1)", isCorrect: true },
+              { text: "ค. ต้องมีคนคอยอุ้มพาไปวางทีละจุดตลอดเวลา", isCorrect: false },
+              { text: "ง. ปล่อยให้เครื่องเดินสุ่มโดยไม่มีการจำแผนที่บ้าน", isCorrect: false }
+            ],
+            explanation: "แม่นยำมาก! หุ่นยนต์ดูดฝุ่นจะได้รับรางวัลเมื่อดูดฝุ่นสะอาด และได้รับบทลงโทษเมื่อชนสิ่งกีดขวาง ทำให้มันจำแผนที่บ้านได้แม่นยำขึ้นเรื่อยๆ"
+          },
+          {
+            q: "9. เมื่อแม่ลิงฝึกฝนไปหลายรอบจนจำทางได้แม่นยำ แล้วตัดสินใจเลือกเฉพาะเส้นทางที่มีคะแนน Q สูงสุด เรียกว่าอะไร?",
+            options: [
+              { text: "ก. การใช้ประโยชน์จากความรู้เดิม (Exploitation)", isCorrect: true },
+              { text: "ข. การเดินสุ่มอย่างไร้ทิศทาง", isCorrect: false },
+              { text: "ค. การรีเซ็ตระบบทิ้งทั้งหมด", isCorrect: false },
+              { text: "ง. การยอมแพ้ต่ออุปสรรค", isCorrect: false }
+            ],
+            explanation: "ถูกต้อง! เมื่อ AI มีข้อมูลมากพอ มันจะเลือกทางที่มีค่า Q-Value สูงสุด เรียกว่าการแสวงหาประโยชน์จากความรู้เดิม (Exploitation)"
+          },
+          {
+            q: "10. การเรียนรู้ของ AI แบบ Reinforcement Learning คล้ายกับการเรียนรู้เรื่องใดของมนุษย์มากที่สุด?",
+            options: [
+              { text: "ก. การฝึกขี่จักรยาน ที่ล้มแล้วเจ็บ (บทลงโทษ) แต่ทรงตัวได้แล้วไปต่อได้ (รางวัล)", isCorrect: true },
+              { text: "ข. การท่องจำสูตรคูณโดยไม่รู้ความหมาย", isCorrect: false },
+              { text: "ค. การนอนหลับพักผ่อนในห้องนอน", isCorrect: false },
+              { text: "ง. การเปิดดูภาพนิ่งโดยไม่มีการเคลื่อนไหว", isCorrect: false }
+            ],
+            explanation: "ยอดเยี่ยมที่สุด! มนุษย์เราก็เรียนรู้ทักษะต่างๆ เช่น การหัดเดิน หรือขี่จักรยาน จากการลองผิดลองถูกและปรับตัวตามผลลัพธ์เช่นเดียวกับ AI เลย!"
+          }
+        ]
+      },
+      isSubmitting: false,
+      isSubmitted: false
+    };
+
+    const exploredRealWorldItems = new Set();
+
+    function openRealWorldModal() {
+      const modal = document.getElementById("realWorldModal");
+      if (modal) {
+        modal.classList.remove("hidden");
+        document.body.style.overflow = "hidden"; // Prevent background scroll
+      }
+    }
+
+    function closeRealWorldModal() {
+      const modal = document.getElementById("realWorldModal");
+      if (modal) {
+        modal.classList.add("hidden");
+        document.body.style.overflow = "auto";
+      }
+    }
+
+    function toggleRealWorldCard(container, key) {
+      const inner = container.querySelector(".card-inner");
+      if (inner) {
+        inner.classList.toggle("is-flipped");
+      }
+
+      if (key) {
+        exploredRealWorldItems.add(key);
+        const count = exploredRealWorldItems.size;
+        const countEl = document.getElementById("exploredCount");
+        if (countEl) countEl.textContent = count;
+
+        if (count >= 3) {
+          const badge = document.getElementById("realWorldExploredBadge");
+          const text = document.getElementById("realWorldExploredText");
+          if (badge) badge.textContent = "🏆";
+          if (text) {
+            text.innerHTML = `<b class="text-emerald-700">ยอดเยี่ยมมาก!</b> น้องๆ เห็นแล้วว่า <b>แม่ลิงเก็บกล้วย</b> ใช้หลักการเดียวกับ <b>AI ระดับโลก</b> เป๊ะๆ เลย!`;
+          }
+        }
+      }
+    }
+
+    // Support ESC key to close modal
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        closeRealWorldModal();
+      }
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+      initClassDropdown();
+      attachFormListeners();
+      renderQuizQuestion();
+      initGridWorld();
+      updateSlideView();
+    });
+
+    function initClassDropdown() {
+      const select = document.getElementById("studentClass");
+      if (!select) return;
+      select.innerHTML = '<option value="ม.1/10" selected>ม.1/10</option>';
+    }
+
+    function attachFormListeners() {
+      const nameInput = document.getElementById("studentName");
+      const classInput = document.getElementById("studentClass");
+      const numInput = document.getElementById("studentNumber");
+      const btnStart = document.getElementById("btnStartAdventure");
+
+      function checkForm() {
+        const nameVal = nameInput.value.trim();
+        const classVal = classInput.value;
+        const numVal = numInput.value.trim();
+
+        const isValid = nameVal.length >= 3 && classVal !== "" && numVal !== "" && Number(numVal) > 0;
+        btnStart.disabled = !isValid;
+      }
+
+      nameInput.addEventListener("input", checkForm);
+      classInput.addEventListener("change", checkForm);
+      numInput.addEventListener("input", checkForm);
+    }
+
+    function handleStartAdventure() {
+      const nameVal = document.getElementById("studentName").value.trim();
+      const classVal = document.getElementById("studentClass").value;
+      const numVal = document.getElementById("studentNumber").value.trim();
+
+      appState.student.name = nameVal;
+      appState.student.classRoom = classVal;
+      appState.student.number = numVal;
+
+      document.getElementById("badgeStudentInfo").textContent = `${nameVal} (${classVal} #${numVal})`;
+      document.getElementById("userBadge").classList.remove("hidden");
+
+      navigateSlide(1);
+    }
+
+    function navigateSlide(direction) {
+      const targetSlide = appState.currentSlide + direction;
+
+      if (appState.currentSlide === 1 && direction > 0 && !appState.student.name) {
+        return;
+      }
+
+      if (targetSlide >= 1 && targetSlide <= appState.totalSlides) {
+        appState.currentSlide = targetSlide;
+        updateSlideView();
+      }
+    }
+
+    function updateSlideView() {
+      for (let i = 1; i <= appState.totalSlides; i++) {
+        const slideEl = document.getElementById(`slide-${i}`);
+        if (slideEl) {
+          if (i === appState.currentSlide) {
+            slideEl.classList.remove("hidden");
+            slideEl.classList.add("block");
+          } else {
+            slideEl.classList.add("hidden");
+            slideEl.classList.remove("block");
+          }
+        }
+      }
+
+      document.getElementById("currentSlideNum").textContent = appState.currentSlide;
+      const progressPercent = (appState.currentSlide / appState.totalSlides) * 100;
+      document.getElementById("progressBar").style.width = `${progressPercent}%`;
+
+      const prevBtn = document.getElementById("btnPrevSlide");
+      const nextBtn = document.getElementById("btnNextSlide");
+
+      prevBtn.disabled = (appState.currentSlide === 1);
+
+      if (appState.currentSlide === 1) {
+        nextBtn.style.display = "none";
+      } else if (appState.currentSlide === appState.totalSlides) {
+        nextBtn.style.display = "none";
+        renderFinalSummary();
+      } else {
+        nextBtn.style.display = "flex";
+        nextBtn.disabled = false;
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function toggleFlipCard(container) {
+      const inner = container.querySelector(".card-inner");
+      if (inner) {
+        inner.classList.toggle("is-flipped");
+      }
+    }
+
+    function runDemoStep(choice) {
+      const monkey = document.getElementById("demoMonkey");
+      const floatScore = document.getElementById("demoFloatingScore");
+      const qValUpEl = document.getElementById("qValUp");
+      const qValDownEl = document.getElementById("qValDown");
+      const rowUp = document.getElementById("rowUp");
+      const rowDown = document.getElementById("rowDown");
+      const feedback = document.getElementById("demoFeedbackText");
+
+      floatScore.classList.remove("pop-score", "hidden", "bg-emerald-100", "text-emerald-700", "bg-rose-100", "text-rose-700");
+
+      if (choice === 'up') {
+        monkey.style.transform = "translate(70px, -24px)";
+        appState.qTable.up += 1.0;
+        qValUpEl.textContent = `+${appState.qTable.up.toFixed(1)}`;
+        
+        floatScore.textContent = "+1 🍌";
+        floatScore.classList.add("bg-emerald-100", "text-emerald-700", "border-emerald-600");
+        
+        rowUp.classList.add("bg-emerald-100");
+        setTimeout(() => rowUp.classList.remove("bg-emerald-100"), 800);
+        
+        feedback.textContent = "🎉 เยี่ยมมาก! ทางบนพบกล้วย AI บันทึกแต้ม Q-Value ทางบนเพิ่มขึ้น!";
+        feedback.className = "text-xs font-bold text-emerald-700 mt-2 h-5";
+      } else {
+        monkey.style.transform = "translate(70px, 24px)";
+        appState.qTable.down -= 1.0;
+        const sign = appState.qTable.down > 0 ? "+" : "";
+        qValDownEl.textContent = `${sign}${appState.qTable.down.toFixed(1)}`;
+
+        floatScore.textContent = "-1 🐜";
+        floatScore.classList.add("bg-rose-100", "text-rose-700", "border-rose-600");
+
+        rowDown.classList.add("bg-rose-100");
+        setTimeout(() => rowDown.classList.remove("bg-rose-100"), 800);
+
+        feedback.textContent = "💥 ระวัง! โดนมดกัด AI ถูกหักแต้ม ทางนี้มีค่า Q-Value ลดลง!";
+        feedback.className = "text-xs font-bold text-rose-700 mt-2 h-5";
+      }
+
+      void floatScore.offsetWidth;
+      floatScore.classList.add("pop-score");
+    }
+
+    function resetDemoStep() {
+      const monkey = document.getElementById("demoMonkey");
+      monkey.style.transform = "translate(0px, 0px)";
+      appState.qTable.up = 0.0;
+      appState.qTable.down = 0.0;
+      document.getElementById("qValUp").textContent = "+0.0";
+      document.getElementById("qValDown").textContent = "+0.0";
+      document.getElementById("demoFeedbackText").textContent = "รีเซ็ตสถานะแล้ว ลองเลือกเส้นทางใหม่ดูนะ!";
+      document.getElementById("demoFeedbackText").className = "text-xs font-bold text-stone-700 mt-2 h-5";
+    }
+
+    function initGridWorld() {
+      const { gridWidth, gridHeight } = appState.miniGame;
+      
+      // Initialize Q-table grid for 5 cols x 3 rows if not yet created
+      if (!appState.miniGame.qTableGrid) {
+        appState.miniGame.qTableGrid = [];
+        for (let y = 0; y < gridHeight; y++) {
+          const row = [];
+          for (let x = 0; x < gridWidth; x++) {
+            row.push({ up: 0.0, down: 0.0, left: 0.0, right: 0.0 });
+          }
+          appState.miniGame.qTableGrid.push(row);
+        }
+      }
+
+      const rowsContainer = document.getElementById("gridBoardRows");
+      if (!rowsContainer) return;
+      rowsContainer.innerHTML = "";
+
+      // Create each of the 3 rows: Row 1, Row 2, Row 3
+      for (let y = 0; y < gridHeight; y++) {
+        const rowWrapper = document.createElement("div");
+        rowWrapper.className = "grid grid-cols-[22px_repeat(5,1fr)] sm:grid-cols-[28px_repeat(5,1fr)] md:grid-cols-[34px_repeat(5,1fr)] gap-1 sm:gap-1.5 md:gap-2 items-center";
+
+        // Row indicator badge (1, 2, 3)
+        const rowBadge = document.createElement("div");
+        rowBadge.className = "h-13 sm:h-16 md:h-20 bg-sky-200 border border-stone-800 sm:border-2 rounded-lg sm:rounded-xl flex items-center justify-center font-black text-[11px] sm:text-xs md:text-sm text-sky-950 shadow-[1px_1px_0px_#222] sm:shadow-[2px_2px_0px_#222]";
+        rowBadge.textContent = (y + 1).toString();
+        rowWrapper.appendChild(rowBadge);
+
+        // 5 column tiles for this row: A(y+1), B(y+1), C(y+1), D(y+1), E(y+1)
+        for (let x = 0; x < gridWidth; x++) {
+          const tile = document.createElement("div");
+          tile.id = `tile-${x}-${y}`;
+          tile.onclick = () => handleTileClick(x, y);
+          tile.className = "relative h-13 sm:h-16 md:h-20 border border-stone-800 sm:border-2 rounded-lg sm:rounded-xl flex flex-col items-center justify-center p-0.5 sm:p-1 transition-all duration-200 cursor-pointer shadow-[1.5px_1.5px_0px_#222] sm:shadow-[2px_2px_0px_#222]";
+          rowWrapper.appendChild(tile);
+        }
+
+        rowsContainer.appendChild(rowWrapper);
+      }
+
+      renderGridState();
+      renderLiveQTableUI();
+      attachKeyboardNavigation();
+    }
+
+    function renderGridState() {
+      const { playerPos, map, visitedCells, radarEnabled, showQOverlay, gridWidth, gridHeight, qTableGrid } = appState.miniGame;
+
+      for (let y = 0; y < gridHeight; y++) {
+        for (let x = 0; x < gridWidth; x++) {
+          const tile = document.getElementById(`tile-${x}-${y}`);
+          if (!tile) continue;
+
+          const cell = map[y][x];
+          const isPlayerHere = (playerPos.x === x && playerPos.y === y);
+          const isVisited = visitedCells.has(`${x},${y}`);
+          const cellQ = qTableGrid ? qTableGrid[y][x] : null;
+          const maxQVal = cellQ ? Math.max(cellQ.up, cellQ.down, cellQ.left, cellQ.right) : 0;
+          const coordName = getCoordLabel(x, y);
+
+          // Base styling
+          tile.className = "relative h-13 sm:h-16 md:h-20 border border-stone-800 sm:border-2 rounded-lg sm:rounded-xl flex flex-col items-center justify-center p-0.5 sm:p-1 transition-all duration-200 cursor-pointer shadow-[1.5px_1.5px_0px_#222] sm:shadow-[2px_2px_0px_#222]";
+
+          // Tile Type Render
+          if (cell.type === 'rock') {
+            tile.className += " bg-stone-300 border-stone-900 cursor-not-allowed pattern-diagonal-lines";
+            tile.innerHTML = `
+              <span class="text-base sm:text-xl md:text-2xl opacity-75">🪨</span>
+              <span class="text-[8px] sm:text-[9px] font-black text-stone-700 mt-0.5 leading-none">${coordName}</span>
+            `;
+          } else if (cell.type === 'home') {
+            tile.className += isPlayerHere 
+              ? " bg-amber-300 ring-2 sm:ring-4 ring-emerald-500 scale-105 z-10 animate-bounce" 
+              : " bg-emerald-100 hover:bg-emerald-200";
+            tile.innerHTML = isPlayerHere 
+              ? `<span class="text-base sm:text-xl md:text-2xl">🐵🏡</span><span class="text-[8px] sm:text-[9px] font-black text-emerald-950 leading-none">ถึงแล้ว!</span>`
+              : `<span class="text-base sm:text-xl md:text-2xl">🏡</span><span class="text-[8px] sm:text-[9px] font-bold text-emerald-800 leading-none">บ้าน ${coordName}</span>`;
+          } else {
+            // Walkable cells
+            let bgStyle = isVisited ? " bg-amber-100/60" : " bg-white hover:bg-amber-50";
+
+            if (radarEnabled) {
+              if (cell.type === 'banana' && !cell.collected) bgStyle = " bg-emerald-100 border-emerald-600";
+              if (cell.type === 'ant') bgStyle = " bg-rose-100 border-rose-600";
+            }
+
+            tile.className += bgStyle;
+
+            // Render Q-Overlay badge if active
+            const qOverlayBadge = (showQOverlay && cell.type !== 'start')
+              ? `<span class="absolute top-0.5 right-0.5 text-[7px] sm:text-[8px] font-black px-0.5 rounded leading-none ${maxQVal > 0 ? 'bg-emerald-200 text-emerald-900' : maxQVal < 0 ? 'bg-rose-200 text-rose-900' : 'bg-stone-200 text-stone-600'}">Q:${maxQVal > 0 ? '+' : ''}${maxQVal.toFixed(1)}</span>`
+              : '';
+
+            if (isPlayerHere) {
+              tile.className += " ring-2 sm:ring-3 ring-amber-500 bg-yellow-200 z-10 scale-105";
+              tile.innerHTML = `${qOverlayBadge}<span class="text-lg sm:text-2xl md:text-3xl animate-bounce">🐵</span><span class="text-[8px] sm:text-[9px] font-black text-stone-900 bg-white/90 px-1 rounded border border-stone-600 mt-0.5 leading-none">${coordName}</span>`;
+            } else if (cell.type === 'banana') {
+              tile.innerHTML = `${qOverlayBadge}` + (cell.collected 
+                ? `<span class="text-xs sm:text-sm text-stone-400">🍂</span><span class="text-[7px] sm:text-[8px] text-stone-400 font-bold leading-none">${coordName}</span>`
+                : `<span class="text-base sm:text-xl md:text-2xl animate-pulse">🍌</span><span class="text-[8px] sm:text-[9px] font-black text-amber-800 leading-none">${coordName} (+1)</span>`);
+            } else if (cell.type === 'ant') {
+              tile.innerHTML = `${qOverlayBadge}` + (cell.stepped 
+                ? `<span class="text-xs sm:text-lg">🐜</span><span class="text-[7px] sm:text-[8px] font-bold text-rose-600 leading-none">${coordName}</span>`
+                : `<span class="text-sm sm:text-lg md:text-xl opacity-90">🐜</span><span class="text-[8px] sm:text-[9px] font-bold text-rose-700 leading-none">${coordName} (-1)</span>`);
+            } else if (cell.type === 'start') {
+              tile.innerHTML = `${qOverlayBadge}<span class="text-sm sm:text-lg md:text-xl opacity-70">🚩</span><span class="text-[8px] sm:text-[9px] font-bold text-stone-600 leading-none">เริ่ม ${coordName}</span>`;
+            } else {
+              tile.innerHTML = `${qOverlayBadge}` + (isVisited 
+                ? `<span class="text-[10px] sm:text-xs text-stone-400">🐾</span><span class="text-[7px] sm:text-[8px] text-stone-400 font-mono font-bold leading-none">${coordName}</span>`
+                : `<span class="text-[8px] sm:text-[10px] text-stone-400 opacity-60 font-mono font-bold leading-none">${coordName}</span>`);
+            }
+          }
+        }
+      }
+    }
+
+    function renderLiveQTableUI(highlightAction = null) {
+      const { playerPos, qTableGrid } = appState.miniGame;
+      if (!qTableGrid) return;
+
+      const currentCoord = getCoordLabel(playerPos.x, playerPos.y);
+      const coordBadge = document.getElementById("currentCoordBadge");
+      if (coordBadge) coordBadge.textContent = `พิกัด ${currentCoord}`;
+
+      const tbody = document.getElementById("qTableRows");
+      if (!tbody) return;
+
+      const cellQ = qTableGrid[playerPos.y][playerPos.x];
+      const actions = [
+        { key: 'up', label: '⬆️ เดินขึ้น', val: cellQ.up },
+        { key: 'down', label: '⬇️ เดินลง', val: cellQ.down },
+        { key: 'left', label: '⬅️ เดินซ้าย', val: cellQ.left },
+        { key: 'right', label: '➡️ เดินขวา', val: cellQ.right }
+      ];
+
+      const maxVal = Math.max(...actions.map(a => a.val));
+      const hasPositiveLearning = actions.some(a => a.val !== 0);
+
+      tbody.innerHTML = "";
+      actions.forEach(act => {
+        const tr = document.createElement("tr");
+        tr.className = "border-b border-stone-300 transition-colors";
+        
+        const isBest = hasPositiveLearning && act.val === maxVal && maxVal > 0;
+        const isHighlighted = (highlightAction === act.key);
+
+        if (isHighlighted) {
+          tr.className += act.val >= 0 ? " bg-emerald-100 font-bold" : " bg-rose-100 font-bold";
+        } else if (isBest) {
+          tr.className += " bg-amber-50";
+        }
+
+        const sign = act.val > 0 ? "+" : "";
+        const valColor = act.val > 0 ? "text-emerald-700 font-black" : act.val < 0 ? "text-rose-600 font-black" : "text-stone-500";
+
+        let evalBadge = `<span class="text-[10px] text-stone-400">ยังไม่สำรวจ</span>`;
+        if (isBest) {
+          evalBadge = `<span class="bg-amber-200 text-amber-900 border border-amber-500 px-1.5 py-0.5 rounded text-[10px] font-bold">⭐ ทางที่ดีที่สุด</span>`;
+        } else if (act.val > 0) {
+          evalBadge = `<span class="bg-emerald-100 text-emerald-800 px-1 py-0.5 rounded text-[10px] font-semibold">คุ้มค่า</span>`;
+        } else if (act.val < 0) {
+          evalBadge = `<span class="bg-rose-100 text-rose-800 px-1 py-0.5 rounded text-[10px] font-semibold">อันตราย</span>`;
+        }
+
+        tr.innerHTML = `
+          <td class="p-1.5 border-r border-stone-300 font-sans text-stone-800">${act.label}</td>
+          <td class="p-1.5 border-r border-stone-300 ${valColor}">${sign}${act.val.toFixed(1)}</td>
+          <td class="p-1.5 font-sans">${evalBadge}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function moveMonkey(dx, dy, actionName = null) {
+      if (appState.miniGame.completed) return;
+
+      if (!actionName) {
+        if (dx === 1) actionName = 'right';
+        else if (dx === -1) actionName = 'left';
+        else if (dy === 1) actionName = 'down';
+        else if (dy === -1) actionName = 'up';
+      }
+
+      const { playerPos, map, gridWidth, gridHeight, qTableGrid } = appState.miniGame;
+      const prevX = playerPos.x;
+      const prevY = playerPos.y;
+      const nextX = prevX + dx;
+      const nextY = prevY + dy;
+
+      // Check boundaries
+      if (nextX < 0 || nextX >= gridWidth || nextY < 0 || nextY >= gridHeight) {
+        showGridNotification("🚫 ชนขอบป่า! ก้าวออกนอกแผนที่ไม่ได้", "bg-stone-200 text-stone-800");
+        return;
+      }
+
+      // Check rock obstacle
+      const targetCell = map[nextY][nextX];
+      const targetCoord = getCoordLabel(nextX, nextY);
+
+      if (targetCell.type === 'rock') {
+        showGridNotification(`🪨 ช่อง ${targetCoord} มีก้อนหินขวาง! เลือกทางอื่น`, "bg-rose-200 text-rose-900");
+        return;
+      }
+
+      // Move player
+      playerPos.x = nextX;
+      playerPos.y = nextY;
+      appState.miniGame.visitedCells.add(`${nextX},${nextY}`);
+      appState.miniGame.lastAction = actionName;
+
+      let stepReward = 0.0;
+      const msgBox = document.getElementById("gameStepMessage");
+
+      if (targetCell.type === 'banana' && !targetCell.collected) {
+        targetCell.collected = true;
+        stepReward = 1.0;
+        appState.miniGame.score = Math.min(4, appState.miniGame.score + 1);
+        showGridNotification(`🍌 อ้ำ! กล้วยที่ช่อง ${targetCoord} (+1 แต้ม)`, "bg-emerald-200 text-emerald-900 border-emerald-700");
+        msgBox.innerHTML = `🎉 <b>พบรางวัล (+1.0):</b> แม่ลิงเก็บกล้วยที่ช่อง <b>${targetCoord}</b> สำเร็จ! Q-Table อัปเดตคะแนนให้ทางนี้แล้ว!`;
+      } else if (targetCell.type === 'ant') {
+        targetCell.stepped = true;
+        stepReward = -1.0;
+        appState.miniGame.score = Math.max(0, appState.miniGame.score - 1);
+        showGridNotification(`💥 โอ๊ย! โดนมดกัดที่ช่อง ${targetCoord} (-1 แต้ม)`, "bg-rose-200 text-rose-900 border-rose-700");
+        msgBox.innerHTML = `🐜 <b>พบบทลงโทษ (-1.0):</b> เหยียบรังมดที่ช่อง <b>${targetCoord}</b>! Q-Table บันทึกค่าลบเพื่อหลีกเลี่ยงในอนาคต`;
+      } else if (targetCell.type === 'home') {
+        stepReward = 2.0;
+        handleGameCompletion();
+      } else {
+        msgBox.innerHTML = `🐾 แม่ลิงก้าวมาที่ช่อง <b>${targetCoord}</b> กำลังมุ่งหน้ากลับบ้าน E3...`;
+      }
+
+      // Bellman Equation Q-Learning Update
+      if (actionName && qTableGrid) {
+        const alpha = 0.6; // Learning rate
+        const gamma = 0.7; // Discount factor
+        const nextCellQ = qTableGrid[nextY][nextX];
+        const maxNextQ = Math.max(nextCellQ.up, nextCellQ.down, nextCellQ.left, nextCellQ.right);
+        
+        const oldQ = qTableGrid[prevY][prevX][actionName];
+        const newQ = oldQ + alpha * (stepReward + (gamma * maxNextQ) - oldQ);
+        qTableGrid[prevY][prevX][actionName] = Math.round(newQ * 10) / 10;
+      }
+
+      document.getElementById("gameScoreDisplay").textContent = appState.miniGame.score;
+      renderGridState();
+      renderLiveQTableUI(actionName);
+    }
+
+    function handleTileClick(x, y) {
+      if (appState.miniGame.completed) return;
+      const { playerPos } = appState.miniGame;
+      const dx = x - playerPos.x;
+      const dy = y - playerPos.y;
+
+      // Only allow 1 step in orthogonal directions
+      if (Math.abs(dx) + Math.abs(dy) === 1) {
+        moveMonkey(dx, dy);
+      }
+    }
+
+    function attachKeyboardNavigation() {
+      window.addEventListener("keydown", (e) => {
+        if (appState.currentSlide !== 4) return;
+        if (["ArrowUp", "KeyW"].includes(e.code)) { e.preventDefault(); moveMonkey(0, -1, 'up'); }
+        if (["ArrowDown", "KeyS"].includes(e.code)) { e.preventDefault(); moveMonkey(0, 1, 'down'); }
+        if (["ArrowLeft", "KeyA"].includes(e.code)) { e.preventDefault(); moveMonkey(-1, 0, 'left'); }
+        if (["ArrowRight", "KeyD"].includes(e.code)) { e.preventDefault(); moveMonkey(1, 0, 'right'); }
+      });
+    }
+
+    function showGridNotification(text, styleClass) {
+      const el = document.getElementById("gridFloatingFeedback");
+      if (!el) return;
+      el.className = `absolute top-3 left-1/2 -translate-x-1/2 border-2 border-stone-800 px-3 py-1 rounded-full text-xs font-black shadow-[2px_2px_0px_#000] z-20 transition-all ${styleClass}`;
+      el.textContent = text;
+      el.classList.remove("hidden");
+      setTimeout(() => {
+        el.classList.add("hidden");
+      }, 1400);
+    }
+
+    function toggleQOverlay() {
+      appState.miniGame.showQOverlay = !appState.miniGame.showQOverlay;
+      const btnText = document.getElementById("qOverlayBtnText");
+      if (btnText) {
+        btnText.textContent = appState.miniGame.showQOverlay ? "ปิดดูค่า Q บนแผนที่" : "เปิดดูค่า Q บนแผนที่";
+      }
+      renderGridState();
+      showGridNotification(appState.miniGame.showQOverlay ? "📊 แสดงคะแนน Q สูงสุดประจำช่อง A1-E3" : "ปิดแสดงค่า Q", "bg-purple-100 text-purple-900");
+    }
+
+    function toggleRadarSensor() {
+      appState.miniGame.radarEnabled = !appState.miniGame.radarEnabled;
+      const statusText = document.getElementById("radarStatusText");
+      if (appState.miniGame.radarEnabled) {
+        statusText.textContent = "เปิด";
+        showGridNotification("📡 เรดาร์ทำงาน: ไฮไลต์กล้วยเขียว / รังมดแดง", "bg-sky-200 text-sky-900");
+      } else {
+        statusText.textContent = "ปิด";
+      }
+      renderGridState();
+    }
+
+    function handleGameCompletion() {
+      appState.miniGame.completed = true;
+      const winBadge = document.getElementById("gameWinBadge");
+      if (winBadge) winBadge.classList.remove("hidden");
+
+      document.getElementById("gameStepMessage").innerHTML = 
+        `🎊 <b>ภารกิจสำเร็จ!</b> แม่ลิงเดินทางถึงบ้านที่ช่อง <b>E3</b> สะสมกล้วยได้ <b>${appState.miniGame.score} / 4 แต้ม</b>! สังเกตว่า Q-Table จำทางที่ดีที่สุดไว้แล้ว กดปุ่ม "ถัดไป" เพื่อทำแบบทดสอบทบทวนความรู้ได้เลย`;
+      
+      showGridNotification("🏡 ถึงบ้าน E3 สำเร็จแล้ว! ยอดเยี่ยมมาก 🐵", "bg-emerald-300 text-emerald-950 border-emerald-800");
+    }
+
+    function resetMiniGame(fullReset = true) {
+      if (fullReset) {
+        appState.miniGame.episode = 1;
+        appState.miniGame.qTableGrid = null;
+        initGridWorld();
+      } else {
+        appState.miniGame.episode++;
+      }
+
+      appState.miniGame.score = 0;
+      appState.miniGame.completed = false;
+      appState.miniGame.playerPos = { x: 0, y: 0 }; // Return to A1
+      appState.miniGame.visitedCells = new Set(["0,0"]);
+
+      // Reset item states
+      appState.miniGame.map.forEach(row => {
+        row.forEach(cell => {
+          if (cell.type === 'banana') cell.collected = false;
+          if (cell.type === 'ant') cell.stepped = false;
+        });
+      });
+
+      document.getElementById("gameScoreDisplay").textContent = "0";
+      document.getElementById("gameEpisodeDisplay").textContent = `#${appState.miniGame.episode}`;
+      
+      const winBadge = document.getElementById("gameWinBadge");
+      if (winBadge) winBadge.classList.add("hidden");
+
+      document.getElementById("gameStepMessage").innerHTML = 
+        `🧭 <b>รอบที่ #${appState.miniGame.episode}:</b> ก้าวเดินจากช่อง <b>A1</b> สังเกตว่าตาราง Q-Table ยังคงจำบทเรียนจากรอบก่อนไว้!`;
+
+      renderGridState();
+      renderLiveQTableUI();
+      showGridNotification(`🔄 เริ่มรอบการเรียนรู้ที่ #${appState.miniGame.episode} (เริ่มที่ A1)`, "bg-amber-100 text-stone-800");
+    }
+
+    function renderQuizQuestion() {
+      const qIndex = appState.quiz.currentIndex;
+      const questionData = appState.quiz.questions[qIndex];
+      if (!questionData) return;
+
+      document.getElementById("quizBadgeNum").textContent = `คำถามที่ ${qIndex + 1} จาก ${appState.quiz.questions.length}`;
+      document.getElementById("quizQuestionText").textContent = questionData.q;
+
+      const feedbackBox = document.getElementById("quizFeedbackBox");
+      feedbackBox.classList.add("hidden");
+      document.getElementById("btnNextQuestion").disabled = true;
+
+      const grid = document.getElementById("quizOptionsGrid");
+      grid.innerHTML = "";
+
+      questionData.options.forEach((opt, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "doodle-btn text-left p-3 bg-white border-2 border-stone-800 rounded-xl hover:bg-stone-50 text-xs md:text-sm font-semibold transition-all shadow-[2px_2px_0px_#222] flex items-start gap-2";
+        btn.innerHTML = `<span class="inline-block px-1.5 py-0.5 bg-stone-200 border border-stone-800 rounded text-xs font-bold">${String.fromCharCode(65 + idx)}</span> <span class="flex-1">${opt.text}</span>`;
+        btn.onclick = () => handleAnswerSelected(idx, btn);
+        grid.appendChild(btn);
+      });
+    }
+
+    function handleAnswerSelected(selectedIdx, clickedButton) {
+      const qIndex = appState.quiz.currentIndex;
+      const questionData = appState.quiz.questions[qIndex];
+      const isCorrect = questionData.options[selectedIdx].isCorrect;
+
+      const grid = document.getElementById("quizOptionsGrid");
+      const buttons = grid.querySelectorAll("button");
+      buttons.forEach(b => b.disabled = true);
+
+      const feedbackBox = document.getElementById("quizFeedbackBox");
+      const titleEl = document.getElementById("feedbackTitle");
+      const detailEl = document.getElementById("feedbackDetail");
+
+      if (isCorrect) {
+        appState.quiz.score += 1;
+        document.getElementById("quizScoreText").textContent = appState.quiz.score;
+
+        clickedButton.classList.remove("bg-white");
+        clickedButton.classList.add("bg-emerald-200", "border-emerald-700");
+
+        feedbackBox.className = "p-3.5 border-2 border-emerald-800 bg-emerald-100 rounded-xl mb-3 text-xs md:text-sm font-bold shadow-[2px_2px_0px_#222] text-emerald-950";
+        titleEl.textContent = "🎉 ถูกต้องแล้ว เก่งมาก! (+1 แต้ม)";
+        detailEl.textContent = questionData.explanation;
+      } else {
+        clickedButton.classList.remove("bg-white");
+        clickedButton.classList.add("bg-rose-200", "border-rose-700");
+
+        questionData.options.forEach((opt, idx) => {
+          if (opt.isCorrect && buttons[idx]) {
+            buttons[idx].classList.remove("bg-white");
+            buttons[idx].classList.add("bg-emerald-100", "border-emerald-600");
+          }
+        });
+
+        feedbackBox.className = "p-3.5 border-2 border-rose-800 bg-rose-100 rounded-xl mb-3 text-xs md:text-sm font-bold shadow-[2px_2px_0px_#222] text-rose-950";
+        titleEl.textContent = "❌ ยังไม่ถูกต้องนะ";
+        detailEl.textContent = questionData.explanation;
+      }
+
+      feedbackBox.classList.remove("hidden");
+      document.getElementById("btnNextQuestion").disabled = false;
+    }
+
+    function goToNextQuestion() {
+      if (appState.quiz.currentIndex < appState.quiz.questions.length - 1) {
+        appState.quiz.currentIndex++;
+        renderQuizQuestion();
+      } else {
+        navigateSlide(1);
+      }
+    }
+
+    function renderFinalSummary() {
+      const totalScore = appState.miniGame.score + appState.quiz.score;
+
+      document.getElementById("summaryName").textContent = appState.student.name || "-";
+      document.getElementById("summaryClassNum").textContent = `${appState.student.classRoom} เลขที่ ${appState.student.number}`;
+      document.getElementById("summaryGameScore").textContent = appState.miniGame.score;
+      document.getElementById("summaryQuizScore").textContent = appState.quiz.score;
+      document.getElementById("summaryTotalScore").textContent = totalScore;
+
+      const badgeIcon = document.getElementById("badgeIcon");
+      const badgeTitle = document.getElementById("badgeTitle");
+      const badgeDesc = document.getElementById("badgeDesc");
+
+      if (totalScore >= 12) {
+        badgeIcon.textContent = "🥇";
+        badgeTitle.textContent = "เหรียญทอง: ปรมาจารย์ปัญญาประดิษฐ์ AI";
+        badgeDesc.textContent = "สุดยอดอัจฉริยะ! คุณเข้าใจกลไก Agent, Environment, Action, และ Reward อย่างทะลุปรุโปร่ง!";
+      } else if (totalScore >= 8) {
+        badgeIcon.textContent = "🥈";
+        badgeTitle.textContent = "เหรียญเงิน: นักสำรวจโมเดลอัจฉริยะ";
+        badgeDesc.textContent = "เก่งมาก! เข้าใจแนวคิดการลองผิดลองถูกและการสะสมรางวัลของ AI ได้อย่างดีเยี่ยม";
+      } else {
+        badgeIcon.textContent = "🥉";
+        badgeTitle.textContent = "เหรียญทองแดง: ผู้ช่วยแม่ลิงมือใหม่";
+        badgeDesc.textContent = "เริ่มต้นได้ดีแล้ว! หมั่นฝึกฝนและสังเกตว่า AI เปลี่ยนการกระทำเมื่อได้รางวัลอย่างไรนะ";
+      }
+    }
+
+    async function submitScoreToGoogleSheet() {
+      if (appState.isSubmitting || appState.isSubmitted) return;
+
+      const totalScore = appState.miniGame.score + appState.quiz.score;
+      const statusBox = document.getElementById("submitStatusBox");
+      const submitBtn = document.getElementById("btnSubmitScore");
+
+      appState.isSubmitting = true;
+      submitBtn.disabled = true;
+
+      statusBox.classList.remove("hidden", "bg-rose-100", "bg-emerald-100", "text-rose-900", "text-emerald-900");
+      statusBox.classList.add("bg-amber-100", "text-amber-900", "border-amber-600");
+      statusBox.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> กำลังส่งคะแนนไปยัง Google Sheet ของคุณครู กรุณารอสักครู่...`;
+
+      const payload = {
+        timestamp: new Date().toLocaleString("th-TH"),
+        name: appState.student.name,
+        classRoom: appState.student.classRoom,
+        number: appState.student.number,
+        gameScore: appState.miniGame.score,
+        quizScore: appState.quiz.score,
+        totalScore: totalScore
+      };
+
+      if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL === "YOUR_GAS_WEB_APP_URL_HERE") {
+        setTimeout(() => {
+          appState.isSubmitting = false;
+          appState.isSubmitted = true;
+          statusBox.className = "p-3 rounded-xl border-2 border-emerald-800 bg-emerald-100 text-emerald-900 text-xs md:text-sm font-bold shadow-[2px_2px_0px_#222]";
+          statusBox.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="text-xl">✅</span>
+              <div>
+                <b>ส่งข้อมูลสำเร็จเรียบร้อย! (โหมดจำลอง)</b>
+                <p class="text-[11px] font-normal text-stone-600 mt-0.5">บันทึกข้อมูลของ ${appState.student.name} (${appState.student.classRoom} เลขที่ ${appState.student.number}) รวมได้ ${totalScore}/14 คะแนน เรียบร้อยแล้ว!</p>
+              </div>
+            </div>`;
+          submitBtn.innerHTML = `<i class="fa-solid fa-check-double mr-2"></i> บันทึกข้อมูลเรียบร้อยแล้ว`;
+        }, 1200);
+        return;
+      }
+
+      try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        appState.isSubmitting = false;
+        appState.isSubmitted = true;
+
+        statusBox.className = "p-3 rounded-xl border-2 border-emerald-800 bg-emerald-100 text-emerald-900 text-xs md:text-sm font-bold shadow-[2px_2px_0px_#222]";
+        statusBox.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="text-xl">🎉</span>
+            <div>
+              <b>ส่งคะแนนเข้า Google Sheet สำเร็จแล้ว!</b>
+              <p class="text-[11px] font-normal text-stone-600 mt-0.5">คุณครูได้รับคะแนน ${totalScore}/14 ของ ${appState.student.name} เรียบร้อยแล้วครับ</p>
+            </div>
+          </div>`;
+        submitBtn.innerHTML = `<i class="fa-solid fa-check-double mr-2"></i> ส่งข้อมูลสำเร็จแล้ว`;
+
+      } catch (error) {
+        console.error("Submission Error:", error);
+        appState.isSubmitting = false;
+        submitBtn.disabled = false;
+
+        statusBox.className = "p-3 rounded-xl border-2 border-rose-800 bg-rose-100 text-rose-900 text-xs md:text-sm font-bold shadow-[2px_2px_0px_#222]";
+        statusBox.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="text-xl">⚠️</span>
+            <div>
+              <b>เกิดข้อผิดพลาดในการเชื่อมต่อ</b>
+              <p class="text-[11px] font-normal text-stone-600 mt-0.5">กรุณาลองกดส่งใหม่อีกครั้ง หรือถ่ายภาพหน้าจอนี้ส่งให้คุณครู</p>
+            </div>
+          </div>`;
+      }
+    }
+  </script>
+</body>
+</html>
